@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GoFundMe Scraper</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #02a95c;
+            --primary-dark: #028a4a;
+            --secondary: #1a1a1a;
+            --bg-light: #f8f9fa;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        .main-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            padding: 40px 20px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .card {
+            border: none;
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
+        }
+
+        .card-header {
+            background: var(--primary);
+            color: white;
+            border-radius: 16px 16px 0 0 !important;
+            padding: 15px 20px;
+            font-weight: 600;
+        }
+
+        .card-body {
+            padding: 25px;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+        }
+
+        .btn-outline-primary {
+            color: var(--primary);
+            border-color: var(--primary);
+        }
+
+        .btn-outline-primary:hover {
+            background: var(--primary);
+            border-color: var(--primary);
+        }
+
+        .form-control, .form-select {
+            border-radius: 8px;
+            padding: 12px 15px;
+            border: 2px solid #e9ecef;
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(2, 169, 92, 0.1);
+        }
+
+        textarea.form-control {
+            min-height: 120px;
+        }
+
+        .result-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-left: 4px solid var(--primary);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            transition: transform 0.2s ease;
+        }
+
+        .result-card:hover {
+            transform: translateX(5px);
+        }
+
+        .result-card h5 {
+            color: var(--secondary);
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .result-card .amount {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .result-card .goal {
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+
+        .result-card .description {
+            color: #495057;
+            font-size: 0.9rem;
+            margin: 10px 0;
+        }
+
+        .donation-badge {
+            display: inline-block;
+            background: #e9ecef;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            margin: 2px;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #e9ecef;
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .stats-bar {
+            display: flex;
+            gap: 20px;
+            padding: 15px 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .stat-item {
+            text-align: center;
+            flex: 1;
+        }
+
+        .stat-item .value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .stat-item .label {
+            font-size: 0.8rem;
+            color: #6c757d;
+        }
+
+        .tab-content {
+            padding-top: 20px;
+        }
+
+        .nav-tabs .nav-link {
+            border: none;
+            color: #6c757d;
+            font-weight: 500;
+            padding: 12px 20px;
+        }
+
+        .nav-tabs .nav-link.active {
+            color: var(--primary);
+            border-bottom: 3px solid var(--primary);
+            background: transparent;
+        }
+
+        .error-card {
+            background: #fff5f5;
+            border-left-color: #dc3545;
+        }
+
+        .url-chip {
+            display: inline-flex;
+            align-items: center;
+            background: #e9ecef;
+            padding: 5px 12px;
+            border-radius: 20px;
+            margin: 3px;
+            font-size: 0.85rem;
+        }
+
+        .url-chip .remove {
+            margin-left: 8px;
+            cursor: pointer;
+            color: #dc3545;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.8rem;
+            }
+
+            .stats-bar {
+                flex-wrap: wrap;
+            }
+
+            .stat-item {
+                min-width: 45%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <div class="header">
+            <h1><i class="fas fa-hand-holding-heart"></i> GoFundMe Scraper</h1>
+            <p>Extract campaign data easily - Enter URLs or discover trending campaigns</p>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-search"></i> Scrape Campaigns
+            </div>
+            <div class="card-body">
+                <ul class="nav nav-tabs" id="myTab" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="manual-tab" data-bs-toggle="tab" data-bs-target="#manual" type="button">
+                            <i class="fas fa-link"></i> Enter URLs
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="discover-tab" data-bs-toggle="tab" data-bs-target="#discover" type="button">
+                            <i class="fas fa-compass"></i> Discover
+                        </button>
+                    </li>
+                </ul>
+
+                <div class="tab-content" id="myTabContent">
+                    <!-- Manual URL Entry -->
+                    <div class="tab-pane fade show active" id="manual" role="tabpanel">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Enter GoFundMe URLs (one per line)</label>
+                            <textarea class="form-control" id="urlInput" placeholder="https://www.gofundme.com/f/campaign-name&#10;https://www.gofundme.com/f/another-campaign"></textarea>
+                        </div>
+                        <button class="btn btn-primary" onclick="scrapeUrls()">
+                            <i class="fas fa-download"></i> Scrape Campaigns
+                        </button>
+                    </div>
+
+                    <!-- Auto Discover -->
+                    <div class="tab-pane fade" id="discover" role="tabpanel">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Number of campaigns to discover</label>
+                            <select class="form-select" id="discoverCount">
+                                <option value="5">5 campaigns</option>
+                                <option value="10">10 campaigns</option>
+                                <option value="20" selected>20 campaigns</option>
+                                <option value="50">50 campaigns</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-primary" onclick="discoverCampaigns()">
+                            <i class="fas fa-magic"></i> Discover Campaigns
+                        </button>
+
+                        <div id="discoveredUrls" class="mt-4" style="display: none;">
+                            <h6 class="fw-bold mb-3">Discovered URLs:</h6>
+                            <div id="urlChips"></div>
+                            <button class="btn btn-outline-primary btn-sm mt-3" onclick="scrapeDiscovered()">
+                                <i class="fas fa-download"></i> Scrape All Discovered
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading -->
+        <div class="loading" id="loading">
+            <div class="spinner mx-auto mb-3"></div>
+            <p class="text-white">Scraping campaigns... Please wait.</p>
+        </div>
+
+        <!-- Results -->
+        <div id="resultsSection" style="display: none;">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span><i class="fas fa-list"></i> Results</span>
+                    <button class="btn btn-light btn-sm" onclick="exportData()">
+                        <i class="fas fa-file-csv"></i> Export CSV
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="stats-bar" id="statsBar">
+                        <div class="stat-item">
+                            <div class="value" id="totalCount">0</div>
+                            <div class="label">Total Scraped</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="value" id="successCount">0</div>
+                            <div class="label">Successful</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="value" id="errorCount">0</div>
+                            <div class="label">Errors</div>
+                        </div>
+                    </div>
+
+                    <div id="resultsList"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let scrapedResults = [];
+        let discoveredUrls = [];
+
+        function showLoading(show) {
+            document.getElementById('loading').classList.toggle('active', show);
+        }
+
+        async function scrapeUrls() {
+            const urlText = document.getElementById('urlInput').value;
+            const urls = urlText.split('\n').filter(u => u.trim());
+
+            if (urls.length === 0) {
+                alert('Please enter at least one URL');
+                return;
+            }
+
+            showLoading(true);
+
+            try {
+                const response = await fetch('/scrape', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ urls: urls })
+                });
+
+                const data = await response.json();
+                scrapedResults = data.results;
+                displayResults(data.results);
+            } catch (error) {
+                alert('Error scraping: ' + error.message);
+            }
+
+            showLoading(false);
+        }
+
+        async function discoverCampaigns() {
+            const maxUrls = parseInt(document.getElementById('discoverCount').value);
+
+            showLoading(true);
+
+            try {
+                const response = await fetch('/discover', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ max_urls: maxUrls })
+                });
+
+                const data = await response.json();
+
+                if (data.error) {
+                    alert('Error: ' + data.error);
+                } else {
+                    discoveredUrls = data.urls;
+                    displayDiscoveredUrls(data.urls);
+                }
+            } catch (error) {
+                alert('Error discovering: ' + error.message);
+            }
+
+            showLoading(false);
+        }
+
+        function displayDiscoveredUrls(urls) {
+            const container = document.getElementById('discoveredUrls');
+            const chips = document.getElementById('urlChips');
+
+            chips.innerHTML = urls.map((url, i) => `
+                <span class="url-chip">
+                    ${url.split('/f/')[1] || url}
+                    <span class="remove" onclick="removeUrl(${i})"><i class="fas fa-times"></i></span>
+                </span>
+            `).join('');
+
+            container.style.display = 'block';
+        }
+
+        function removeUrl(index) {
+            discoveredUrls.splice(index, 1);
+            displayDiscoveredUrls(discoveredUrls);
+        }
+
+        async function scrapeDiscovered() {
+            if (discoveredUrls.length === 0) {
+                alert('No URLs to scrape');
+                return;
+            }
+
+            showLoading(true);
+
+            try {
+                const response = await fetch('/scrape', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ urls: discoveredUrls })
+                });
+
+                const data = await response.json();
+                scrapedResults = data.results;
+                displayResults(data.results);
+            } catch (error) {
+                alert('Error scraping: ' + error.message);
+            }
+
+            showLoading(false);
+        }
+
+        function displayResults(results) {
+            const section = document.getElementById('resultsSection');
+            const list = document.getElementById('resultsList');
+
+            const successful = results.filter(r => !r.error);
+            const errors = results.filter(r => r.error);
+
+            document.getElementById('totalCount').textContent = results.length;
+            document.getElementById('successCount').textContent = successful.length;
+            document.getElementById('errorCount').textContent = errors.length;
+
+            list.innerHTML = results.map(r => {
+                if (r.error) {
+                    return `
+                        <div class="result-card error-card">
+                            <h5><i class="fas fa-exclamation-circle text-danger"></i> Error</h5>
+                            <p class="text-danger">${r.error}</p>
+                            <small class="text-muted">${r.url}</small>
+                        </div>
+                    `;
+                }
+
+                const donations = r.donations && r.donations.length > 0
+                    ? r.donations.slice(0, 5).map(d => `<span class="donation-badge">${d.name}: ${d.amount}</span>`).join('')
+                    : '<span class="text-muted">No donations data</span>';
+
+                return `
+                    <div class="result-card">
+                        <h5>${r.title}</h5>
+                        <div class="d-flex align-items-baseline gap-2 mb-2">
+                            <span class="amount">${r.amount_raised}</span>
+                            <span class="goal">raised of ${r.goal_amount} goal</span>
+                        </div>
+                        <p class="description">${r.statement}</p>
+                        <div class="mb-2">
+                            <small class="text-muted fw-bold">Recent Donations:</small><br>
+                            ${donations}
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted">Scraped: ${r.date_scraped}</small>
+                            <a href="${r.url}" target="_blank" class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-external-link-alt"></i> View Campaign
+                            </a>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            section.style.display = 'block';
+            section.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        async function exportData() {
+            if (scrapedResults.length === 0) {
+                alert('No data to export');
+                return;
+            }
+
+            try {
+                const response = await fetch('/export', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ results: scrapedResults })
+                });
+
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `gofundme_data_${new Date().toISOString().split('T')[0]}.csv`;
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    window.URL.revokeObjectURL(url);
+                } else {
+                    alert('Error exporting data');
+                }
+            } catch (error) {
+                alert('Error exporting: ' + error.message);
+            }
+        }
+    </script>
+</body>
+</html>
