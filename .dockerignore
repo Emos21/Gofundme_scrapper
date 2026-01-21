@@ -1,0 +1,40 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+venv
+env
+*.egg-info
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# Data
+*.db
+*.sqlite
+data/
+
+# Logs
+*.log
+logs/
+
+# Local config
+.env
+CLAUDE.md
+
+# Test files
+tests/
+*.test.py
+
+# Documentation
+*.md
+!README.md
