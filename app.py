@@ -969,3 +969,89 @@ def get_category_stats():
             'avg_goal': round(row.avg_goal or 0, 2)
         } for row in stats]
     })
+
+
+# ============== PLAYWRIGHT SCRAPING ==============
+
+@app.route('/api/scrape/playwright', methods=['POST'])
+def scrape_with_playwright():
+    """Scrape campaigns using Playwright for JS-rendered content."""
+    from playwright_scraper import scrape_campaign_sync, check_playwright_installed
+    
+    if not check_playwright_installed():
+        return jsonify({
+            "error": "Playwright not available. Install with: pip install playwright && playwright install chromium"
+        }), 400
+    
+    data = request.json
+    urls = data.get('urls', [])
+    
+    if not urls:
+        return jsonify({"error": "No URLs provided"}), 400
+    
+    results = []
+    for url in urls:
+        url = url.strip()
+        if url and 'gofundme.com' in url:
+            result = scrape_campaign_sync(url)
+            
+            # Save to database if successful
+            if 'error' not in result:
+                try:
+                    campaign = Campaign.query.filter_by(url=url).first()
+                    if not campaign:
+                        campaign = Campaign(
+                            url=url,
+                            title=result.get('title'),
+                            description=result.get('full_statement'),
+                            goal_amount=parse_amount(result.get('goal_amount')),
+                            organizer=result.get('organizer'),
+                            location=result.get('location')
+                        )
+                        db.session.add(campaign)
+                        db.session.flush()
+                    else:
+                        campaign.title = result.get('title')
+                        campaign.description = result.get('full_statement')
+                        campaign.goal_amount = parse_amount(result.get('goal_amount'))
+                        campaign.organizer = result.get('organizer')
+                        campaign.location = result.get('location')
+                        campaign.updated_at = datetime.utcnow()
+                    
+                    snapshot = CampaignSnapshot(
+                        campaign_id=campaign.id,
+                        amount_raised=parse_amount(result.get('amount_raised')),
+                        donor_count=result.get('donor_count'),
+                        share_count=result.get('share_count')
+                    )
+                    db.session.add(snapshot)
+                    
+                    for d in result.get('donations', []):
+                        donation = Donation(
+                            campaign_id=campaign.id,
+                            donor_name=d.get('name'),
+                            amount=parse_amount(d.get('amount'))
+                        )
+                        db.session.add(donation)
+                    
+                    db.session.commit()
+                    result['campaign_id'] = campaign.id
+                except Exception as e:
+                    db.session.rollback()
+                    print(f"Database error: {e}")
+            
+            results.append(result)
+    
+    return jsonify({"results": results, "count": len(results), "scraper": "playwright"})
+
+
+@app.route('/api/scraper/status', methods=['GET'])
+def scraper_status():
+    """Check which scrapers are available."""
+    from playwright_scraper import check_playwright_installed
+    
+    return jsonify({
+        "basic": True,
+        "playwright": check_playwright_installed(),
+        "recommended": "playwright" if check_playwright_installed() else "basic"
+    })
