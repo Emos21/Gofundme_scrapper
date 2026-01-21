@@ -639,3 +639,203 @@ def run_task_now(task_id):
 def scheduler_page():
     """Scheduler management page."""
     return render_template('scheduler.html')
+
+
+# ============== BULK URL IMPORT ==============
+
+@app.route('/api/import/urls', methods=['POST'])
+def import_urls():
+    """Import URLs from uploaded file (CSV or TXT)."""
+    if 'file' not in request.files:
+        return jsonify({"error": "No file provided"}), 400
+    
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({"error": "No file selected"}), 400
+    
+    urls = []
+    
+    try:
+        content = file.read().decode('utf-8')
+        
+        if file.filename.endswith('.csv'):
+            # Parse CSV - look for URL column
+            import csv
+            reader = csv.DictReader(io.StringIO(content))
+            for row in reader:
+                # Try common column names
+                url = row.get('url') or row.get('URL') or row.get('link') or row.get('Link')
+                if url and 'gofundme.com' in url:
+                    urls.append(url.strip())
+        else:
+            # Plain text - one URL per line
+            for line in content.split('\n'):
+                line = line.strip()
+                if line and 'gofundme.com' in line:
+                    urls.append(line)
+    except Exception as e:
+        return jsonify({"error": f"Error parsing file: {str(e)}"}), 400
+    
+    # Remove duplicates
+    urls = list(set(urls))
+    
+    return jsonify({
+        "urls": urls,
+        "count": len(urls),
+        "message": f"Found {len(urls)} valid GoFundMe URLs"
+    })
+
+
+@app.route('/api/import/scrape', methods=['POST'])
+def import_and_scrape():
+    """Import URLs from file and scrape them all."""
+    if 'file' not in request.files:
+        return jsonify({"error": "No file provided"}), 400
+    
+    file = request.files['file']
+    content = file.read().decode('utf-8')
+    
+    urls = []
+    if file.filename.endswith('.csv'):
+        import csv
+        reader = csv.DictReader(io.StringIO(content))
+        for row in reader:
+            url = row.get('url') or row.get('URL') or row.get('link') or row.get('Link')
+            if url and 'gofundme.com' in url:
+                urls.append(url.strip())
+    else:
+        for line in content.split('\n'):
+            line = line.strip()
+            if line and 'gofundme.com' in line:
+                urls.append(line)
+    
+    urls = list(set(urls))
+    
+    # Scrape all URLs
+    results = []
+    for url in urls:
+        result = scrape_campaign(url, save_to_db=True)
+        results.append(result)
+    
+    successful = len([r for r in results if 'error' not in r])
+    
+    return jsonify({
+        "results": results,
+        "total": len(results),
+        "successful": successful,
+        "failed": len(results) - successful
+    })
+
+
+# ============== AUTHENTICATION ==============
+
+from auth import init_jwt, generate_api_key, hash_password, verify_password
+from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
+
+init_jwt(app)
+
+
+@app.route('/api/auth/register', methods=['POST'])
+def register():
+    """Register a new user."""
+    data = request.json
+    
+    username = data.get('username')
+    email = data.get('email')
+    password = data.get('password')
+    
+    if not all([username, email, password]):
+        return jsonify({"error": "Missing required fields"}), 400
+    
+    # Check if user exists
+    if User.query.filter((User.username == username) | (User.email == email)).first():
+        return jsonify({"error": "Username or email already exists"}), 400
+    
+    user = User(
+        username=username,
+        email=email,
+        password_hash=hash_password(password),
+        api_key=generate_api_key()
+    )
+    
+    db.session.add(user)
+    db.session.commit()
+    
+    # Generate token
+    token = create_access_token(identity=user.id)
+    
+    return jsonify({
+        "message": "User registered successfully",
+        "user": user.to_dict(),
+        "token": token,
+        "api_key": user.api_key
+    }), 201
+
+
+@app.route('/api/auth/login', methods=['POST'])
+def login():
+    """Login and get access token."""
+    data = request.json
+    
+    username = data.get('username')
+    password = data.get('password')
+    
+    user = User.query.filter_by(username=username).first()
+    
+    if not user or not verify_password(password, user.password_hash):
+        return jsonify({"error": "Invalid credentials"}), 401
+    
+    user.last_login = datetime.utcnow()
+    db.session.commit()
+    
+    token = create_access_token(identity=user.id)
+    
+    return jsonify({
+        "message": "Login successful",
+        "user": user.to_dict(),
+        "token": token,
+        "api_key": user.api_key
+    })
+
+
+@app.route('/api/auth/me', methods=['GET'])
+@jwt_required()
+def get_current_user():
+    """Get current user info."""
+    user_id = get_jwt_identity()
+    user = User.query.get(user_id)
+    
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+    
+    return jsonify({"user": user.to_dict()})
+
+
+@app.route('/api/auth/api-key', methods=['POST'])
+@jwt_required()
+def regenerate_api_key():
+    """Regenerate API key."""
+    user_id = get_jwt_identity()
+    user = User.query.get(user_id)
+    
+    user.api_key = generate_api_key()
+    db.session.commit()
+    
+    return jsonify({
+        "message": "API key regenerated",
+        "api_key": user.api_key
+    })
+
+
+# API Key authentication middleware
+@app.before_request
+def check_api_key():
+    """Check API key for /api/ routes (alternative to JWT)."""
+    if request.path.startswith('/api/') and not request.path.startswith('/api/auth/'):
+        api_key = request.headers.get('X-API-Key')
+        if api_key:
+            user = User.query.filter_by(api_key=api_key).first()
+            if user:
+                # Valid API key, allow request
+                return None
+        # If no API key, JWT will be checked by the route decorator
