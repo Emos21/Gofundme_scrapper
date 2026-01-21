@@ -353,3 +353,188 @@ def dashboard():
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
+
+
+# ============== MULTI-FORMAT EXPORT ==============
+
+@app.route('/export/json', methods=['POST'])
+def export_json():
+    """Export scraped data to JSON."""
+    data = request.json
+    results = data.get('results', [])
+
+    if not results:
+        return jsonify({"error": "No data to export"}), 400
+
+    export_data = []
+    for r in results:
+        if 'error' not in r:
+            export_data.append({
+                'title': r.get('title', ''),
+                'amount_raised': r.get('amount_raised', ''),
+                'goal_amount': r.get('goal_amount', ''),
+                'description': r.get('full_statement', r.get('statement', '')),
+                'donations': r.get('donations', []),
+                'url': r.get('url', ''),
+                'date_scraped': r.get('date_scraped', '')
+            })
+
+    output = io.BytesIO()
+    output.write(json.dumps(export_data, indent=2).encode('utf-8'))
+    output.seek(0)
+
+    return send_file(
+        output,
+        mimetype='application/json',
+        as_attachment=True,
+        download_name=f'gofundme_data_{date.today()}.json'
+    )
+
+
+@app.route('/export/excel', methods=['POST'])
+def export_excel():
+    """Export scraped data to Excel."""
+    data = request.json
+    results = data.get('results', [])
+
+    if not results:
+        return jsonify({"error": "No data to export"}), 400
+
+    df_data = []
+    for r in results:
+        if 'error' not in r:
+            donations_str = '; '.join([f"{d['name']}: {d['amount']}" for d in r.get('donations', [])])
+            df_data.append({
+                'Title': r.get('title', ''),
+                'Amount Raised': r.get('amount_raised', ''),
+                'Goal Amount': r.get('goal_amount', ''),
+                'Description': r.get('full_statement', r.get('statement', ''))[:500],
+                'Recent Donations': donations_str,
+                'URL': r.get('url', ''),
+                'Date Scraped': r.get('date_scraped', '')
+            })
+
+    df = pd.DataFrame(df_data)
+
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False, sheet_name='Campaigns')
+        
+        # Auto-adjust column widths
+        worksheet = writer.sheets['Campaigns']
+        for idx, col in enumerate(df.columns):
+            max_length = max(df[col].astype(str).map(len).max(), len(col)) + 2
+            worksheet.column_dimensions[chr(65 + idx)].width = min(max_length, 50)
+    
+    output.seek(0)
+
+    return send_file(
+        output,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        as_attachment=True,
+        download_name=f'gofundme_data_{date.today()}.xlsx'
+    )
+
+
+@app.route('/export/pdf', methods=['POST'])
+def export_pdf():
+    """Export scraped data to PDF."""
+    from reportlab.lib import colors
+    from reportlab.lib.pagesizes import letter, landscape
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.units import inch
+
+    data = request.json
+    results = data.get('results', [])
+
+    if not results:
+        return jsonify({"error": "No data to export"}), 400
+
+    output = io.BytesIO()
+    doc = SimpleDocTemplate(output, pagesize=landscape(letter), rightMargin=30, leftMargin=30, topMargin=30, bottomMargin=30)
+    
+    elements = []
+    styles = getSampleStyleSheet()
+    
+    # Title
+    title_style = ParagraphStyle('Title', parent=styles['Heading1'], fontSize=18, spaceAfter=20)
+    elements.append(Paragraph(f"GoFundMe Scraper Report - {date.today()}", title_style))
+    elements.append(Spacer(1, 20))
+
+    # Table data
+    table_data = [['Title', 'Amount Raised', 'Goal', 'URL']]
+    
+    for r in results:
+        if 'error' not in r:
+            title = r.get('title', '')[:40] + ('...' if len(r.get('title', '')) > 40 else '')
+            table_data.append([
+                title,
+                r.get('amount_raised', 'N/A'),
+                r.get('goal_amount', 'N/A'),
+                r.get('url', '')[:50] + '...'
+            ])
+
+    # Create table
+    table = Table(table_data, colWidths=[3*inch, 1.5*inch, 1.5*inch, 3.5*inch])
+    table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#02a95c')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 11),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.white),
+        ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+        ('FONTSIZE', (0, 1), (-1, -1), 9),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f8f9fa')]),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('TOPPADDING', (0, 1), (-1, -1), 8),
+        ('BOTTOMPADDING', (0, 1), (-1, -1), 8),
+    ]))
+    
+    elements.append(table)
+    
+    # Summary
+    elements.append(Spacer(1, 30))
+    summary_style = ParagraphStyle('Summary', parent=styles['Normal'], fontSize=10, textColor=colors.grey)
+    elements.append(Paragraph(f"Total campaigns: {len([r for r in results if 'error' not in r])}", summary_style))
+    
+    doc.build(elements)
+    output.seek(0)
+
+    return send_file(
+        output,
+        mimetype='application/pdf',
+        as_attachment=True,
+        download_name=f'gofundme_report_{date.today()}.pdf'
+    )
+
+
+@app.route('/export/database', methods=['GET'])
+def export_database():
+    """Export all database data to JSON."""
+    campaigns = Campaign.query.all()
+    
+    export_data = {
+        'exported_at': datetime.utcnow().isoformat(),
+        'campaigns': []
+    }
+    
+    for c in campaigns:
+        campaign_data = c.to_dict()
+        campaign_data['all_snapshots'] = [s.to_dict() for s in c.snapshots.all()]
+        campaign_data['all_donations'] = [d.to_dict() for d in c.donations.all()]
+        export_data['campaigns'].append(campaign_data)
+    
+    output = io.BytesIO()
+    output.write(json.dumps(export_data, indent=2).encode('utf-8'))
+    output.seek(0)
+
+    return send_file(
+        output,
+        mimetype='application/json',
+        as_attachment=True,
+        download_name=f'gofundme_database_export_{date.today()}.json'
+    )

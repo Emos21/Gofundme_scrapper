@@ -264,12 +264,12 @@
                     <li class="nav-item" role="presentation">
                         <button class="nav-link active" id="manual-tab" data-bs-toggle="tab" data-bs-target="#manual" type="button">
                             <i class="fas fa-link"></i> Enter URLs
-                        </button>
+                        </button><ul class="dropdown-menu"><li><a class="dropdown-item" href="#" onclick="exportData(); return false;"><i class="fas fa-file-csv text-success"></i> CSV</a></li><li><a class="dropdown-item" href="#" onclick="exportExcel(); return false;"><i class="fas fa-file-excel text-success"></i> Excel</a></li><li><a class="dropdown-item" href="#" onclick="exportJSON(); return false;"><i class="fas fa-file-code text-warning"></i> JSON</a></li><li><a class="dropdown-item" href="#" onclick="exportPDF(); return false;"><i class="fas fa-file-pdf text-danger"></i> PDF</a></li></ul></div>
                     </li>
                     <li class="nav-item" role="presentation">
                         <button class="nav-link" id="discover-tab" data-bs-toggle="tab" data-bs-target="#discover" type="button">
                             <i class="fas fa-compass"></i> Discover
-                        </button>
+                        </button><ul class="dropdown-menu"><li><a class="dropdown-item" href="#" onclick="exportData(); return false;"><i class="fas fa-file-csv text-success"></i> CSV</a></li><li><a class="dropdown-item" href="#" onclick="exportExcel(); return false;"><i class="fas fa-file-excel text-success"></i> Excel</a></li><li><a class="dropdown-item" href="#" onclick="exportJSON(); return false;"><i class="fas fa-file-code text-warning"></i> JSON</a></li><li><a class="dropdown-item" href="#" onclick="exportPDF(); return false;"><i class="fas fa-file-pdf text-danger"></i> PDF</a></li></ul></div>
                     </li>
                 </ul>
 
@@ -282,7 +282,7 @@
                         </div>
                         <button class="btn btn-primary" onclick="scrapeUrls()">
                             <i class="fas fa-download"></i> Scrape Campaigns
-                        </button>
+                        </button><ul class="dropdown-menu"><li><a class="dropdown-item" href="#" onclick="exportData(); return false;"><i class="fas fa-file-csv text-success"></i> CSV</a></li><li><a class="dropdown-item" href="#" onclick="exportExcel(); return false;"><i class="fas fa-file-excel text-success"></i> Excel</a></li><li><a class="dropdown-item" href="#" onclick="exportJSON(); return false;"><i class="fas fa-file-code text-warning"></i> JSON</a></li><li><a class="dropdown-item" href="#" onclick="exportPDF(); return false;"><i class="fas fa-file-pdf text-danger"></i> PDF</a></li></ul></div>
                     </div>
 
                     <!-- Auto Discover -->
@@ -298,14 +298,14 @@
                         </div>
                         <button class="btn btn-primary" onclick="discoverCampaigns()">
                             <i class="fas fa-magic"></i> Discover Campaigns
-                        </button>
+                        </button><ul class="dropdown-menu"><li><a class="dropdown-item" href="#" onclick="exportData(); return false;"><i class="fas fa-file-csv text-success"></i> CSV</a></li><li><a class="dropdown-item" href="#" onclick="exportExcel(); return false;"><i class="fas fa-file-excel text-success"></i> Excel</a></li><li><a class="dropdown-item" href="#" onclick="exportJSON(); return false;"><i class="fas fa-file-code text-warning"></i> JSON</a></li><li><a class="dropdown-item" href="#" onclick="exportPDF(); return false;"><i class="fas fa-file-pdf text-danger"></i> PDF</a></li></ul></div>
 
                         <div id="discoveredUrls" class="mt-4" style="display: none;">
                             <h6 class="fw-bold mb-3">Discovered URLs:</h6>
                             <div id="urlChips"></div>
                             <button class="btn btn-outline-primary btn-sm mt-3" onclick="scrapeDiscovered()">
                                 <i class="fas fa-download"></i> Scrape All Discovered
-                            </button>
+                            </button><ul class="dropdown-menu"><li><a class="dropdown-item" href="#" onclick="exportData(); return false;"><i class="fas fa-file-csv text-success"></i> CSV</a></li><li><a class="dropdown-item" href="#" onclick="exportExcel(); return false;"><i class="fas fa-file-excel text-success"></i> Excel</a></li><li><a class="dropdown-item" href="#" onclick="exportJSON(); return false;"><i class="fas fa-file-code text-warning"></i> JSON</a></li><li><a class="dropdown-item" href="#" onclick="exportPDF(); return false;"><i class="fas fa-file-pdf text-danger"></i> PDF</a></li></ul></div>
                         </div>
                     </div>
                 </div>
@@ -323,9 +323,9 @@
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <span><i class="fas fa-list"></i> Results</span>
-                    <button class="btn btn-light btn-sm" onclick="exportData()">
-                        <i class="fas fa-file-csv"></i> Export CSV
-                    </button>
+                    <div class="dropdown"><button class="btn btn-light btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-download"></i> Export
+                    </button><ul class="dropdown-menu"><li><a class="dropdown-item" href="#" onclick="exportData(); return false;"><i class="fas fa-file-csv text-success"></i> CSV</a></li><li><a class="dropdown-item" href="#" onclick="exportExcel(); return false;"><i class="fas fa-file-excel text-success"></i> Excel</a></li><li><a class="dropdown-item" href="#" onclick="exportJSON(); return false;"><i class="fas fa-file-code text-warning"></i> JSON</a></li><li><a class="dropdown-item" href="#" onclick="exportPDF(); return false;"><i class="fas fa-file-pdf text-danger"></i> PDF</a></li></ul></div>
                 </div>
                 <div class="card-body">
                     <div class="stats-bar" id="statsBar">
@@ -542,3 +542,84 @@
     </script>
 </body>
 </html>
+
+<script>
+// Additional export functions
+async function exportExcel() {
+    if (scrapedResults.length === 0) {
+        alert('No data to export');
+        return;
+    }
+    try {
+        const response = await fetch('/export/excel', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ results: scrapedResults })
+        });
+        if (response.ok) {
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'gofundme_data_' + new Date().toISOString().split('T')[0] + '.xlsx';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+        }
+    } catch (error) {
+        alert('Error exporting: ' + error.message);
+    }
+}
+
+async function exportJSON() {
+    if (scrapedResults.length === 0) {
+        alert('No data to export');
+        return;
+    }
+    try {
+        const response = await fetch('/export/json', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ results: scrapedResults })
+        });
+        if (response.ok) {
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'gofundme_data_' + new Date().toISOString().split('T')[0] + '.json';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+        }
+    } catch (error) {
+        alert('Error exporting: ' + error.message);
+    }
+}
+
+async function exportPDF() {
+    if (scrapedResults.length === 0) {
+        alert('No data to export');
+        return;
+    }
+    try {
+        const response = await fetch('/export/pdf', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ results: scrapedResults })
+        });
+        if (response.ok) {
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'gofundme_report_' + new Date().toISOString().split('T')[0] + '.pdf';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+        }
+    } catch (error) {
+        alert('Error exporting: ' + error.message);
+    }
+}
+</script>
