@@ -351,9 +351,6 @@ def dashboard():
     return render_template('dashboard.html')
 
 
-if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
-
 
 # ============== MULTI-FORMAT EXPORT ==============
 
@@ -1055,3 +1052,6 @@ def scraper_status():
         "playwright": check_playwright_installed(),
         "recommended": "playwright" if check_playwright_installed() else "basic"
     })
+
+if __name__ == '__main__':
+    app.run(debug=True, host='0.0.0.0', port=5000)
