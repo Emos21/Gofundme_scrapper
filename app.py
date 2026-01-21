@@ -4,7 +4,7 @@ from bs4 import BeautifulSoup
 import requests
 import pandas as pd
 import re
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 import os
 import io
 import json
@@ -839,3 +839,133 @@ def check_api_key():
                 # Valid API key, allow request
                 return None
         # If no API key, JWT will be checked by the route decorator
+
+
+# ============== TREND ANALYSIS ==============
+
+@app.route('/api/trends/funding', methods=['GET'])
+def get_funding_trends():
+    """Get funding trends over time."""
+    from sqlalchemy import func
+    
+    days = request.args.get('days', 30, type=int)
+    
+    # Get daily totals
+    cutoff = datetime.utcnow() - timedelta(days=days)
+    
+    daily_data = db.session.query(
+        func.date(CampaignSnapshot.scraped_at).label('date'),
+        func.sum(CampaignSnapshot.amount_raised).label('total_raised'),
+        func.count(CampaignSnapshot.id).label('snapshots'),
+        func.avg(CampaignSnapshot.amount_raised).label('avg_raised')
+    ).filter(
+        CampaignSnapshot.scraped_at >= cutoff
+    ).group_by(
+        func.date(CampaignSnapshot.scraped_at)
+    ).order_by('date').all()
+    
+    return jsonify({
+        'trends': [{
+            'date': str(row.date),
+            'total_raised': row.total_raised or 0,
+            'snapshots': row.snapshots,
+            'avg_raised': round(row.avg_raised or 0, 2)
+        } for row in daily_data]
+    })
+
+
+@app.route('/api/trends/top-campaigns', methods=['GET'])
+def get_top_campaigns():
+    """Get top performing campaigns."""
+    limit = request.args.get('limit', 10, type=int)
+    
+    # Get latest snapshot for each campaign and sort by amount
+    from sqlalchemy import func
+    
+    subquery = db.session.query(
+        CampaignSnapshot.campaign_id,
+        func.max(CampaignSnapshot.scraped_at).label('latest')
+    ).group_by(CampaignSnapshot.campaign_id).subquery()
+    
+    top_campaigns = db.session.query(Campaign, CampaignSnapshot).join(
+        subquery, Campaign.id == subquery.c.campaign_id
+    ).join(
+        CampaignSnapshot,
+        (CampaignSnapshot.campaign_id == Campaign.id) &
+        (CampaignSnapshot.scraped_at == subquery.c.latest)
+    ).order_by(
+        CampaignSnapshot.amount_raised.desc()
+    ).limit(limit).all()
+    
+    return jsonify({
+        'campaigns': [{
+            'id': c.id,
+            'title': c.title,
+            'url': c.url,
+            'goal': c.goal_amount,
+            'raised': s.amount_raised,
+            'progress': round((s.amount_raised / c.goal_amount * 100) if c.goal_amount else 0, 1),
+            'donors': s.donor_count
+        } for c, s in top_campaigns]
+    })
+
+
+@app.route('/api/trends/growth', methods=['GET'])
+def get_growth_data():
+    """Get campaign growth data for charts."""
+    campaign_id = request.args.get('campaign_id', type=int)
+    
+    if campaign_id:
+        # Get snapshots for specific campaign
+        snapshots = CampaignSnapshot.query.filter_by(
+            campaign_id=campaign_id
+        ).order_by(CampaignSnapshot.scraped_at.asc()).all()
+        
+        campaign = Campaign.query.get(campaign_id)
+        
+        return jsonify({
+            'campaign': campaign.to_dict() if campaign else None,
+            'data': [{
+                'date': s.scraped_at.isoformat(),
+                'amount': s.amount_raised or 0,
+                'donors': s.donor_count or 0
+            } for s in snapshots]
+        })
+    else:
+        # Get overall growth
+        from sqlalchemy import func
+        
+        daily = db.session.query(
+            func.date(CampaignSnapshot.scraped_at).label('date'),
+            func.count(func.distinct(CampaignSnapshot.campaign_id)).label('campaigns'),
+            func.sum(CampaignSnapshot.amount_raised).label('total')
+        ).group_by(func.date(CampaignSnapshot.scraped_at)).order_by('date').all()
+        
+        return jsonify({
+            'data': [{
+                'date': str(row.date),
+                'campaigns': row.campaigns,
+                'total': row.total or 0
+            } for row in daily]
+        })
+
+
+@app.route('/api/trends/categories', methods=['GET'])
+def get_category_stats():
+    """Get statistics by category."""
+    from sqlalchemy import func
+    
+    # Group campaigns by category
+    stats = db.session.query(
+        Campaign.category,
+        func.count(Campaign.id).label('count'),
+        func.avg(Campaign.goal_amount).label('avg_goal')
+    ).group_by(Campaign.category).all()
+    
+    return jsonify({
+        'categories': [{
+            'name': row.category or 'Uncategorized',
+            'count': row.count,
+            'avg_goal': round(row.avg_goal or 0, 2)
+        } for row in stats]
+    })

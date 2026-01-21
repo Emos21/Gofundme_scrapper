@@ -8,109 +8,36 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        :root {
-            --primary: #02a95c;
-            --primary-dark: #028a4a;
-            --secondary: #1a1a1a;
-        }
-        body {
-            background: #f0f2f5;
-            font-family: 'Segoe UI', sans-serif;
-        }
-        .navbar {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        }
-        .stat-card {
-            background: white;
-            border-radius: 16px;
-            padding: 25px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-            transition: transform 0.2s;
-        }
-        .stat-card:hover {
-            transform: translateY(-5px);
-        }
-        .stat-card .icon {
-            width: 60px;
-            height: 60px;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-            color: white;
-        }
+        :root { --primary: #02a95c; --primary-dark: #028a4a; }
+        body { background: #f0f2f5; font-family: 'Segoe UI', sans-serif; }
+        .navbar { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .stat-card { background: white; border-radius: 16px; padding: 25px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); transition: transform 0.2s; }
+        .stat-card:hover { transform: translateY(-5px); }
+        .stat-card .icon { width: 60px; height: 60px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px; color: white; }
         .stat-card .icon.green { background: linear-gradient(135deg, #02a95c, #00c853); }
         .stat-card .icon.blue { background: linear-gradient(135deg, #667eea, #764ba2); }
         .stat-card .icon.orange { background: linear-gradient(135deg, #ff9800, #ff5722); }
         .stat-card .icon.red { background: linear-gradient(135deg, #f44336, #e91e63); }
-        .stat-card h3 {
-            font-size: 2rem;
-            font-weight: 700;
-            margin: 15px 0 5px;
-        }
-        .stat-card p {
-            color: #6c757d;
-            margin: 0;
-        }
-        .chart-card {
-            background: white;
-            border-radius: 16px;
-            padding: 25px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-            margin-bottom: 20px;
-        }
-        .chart-card h5 {
-            font-weight: 600;
-            margin-bottom: 20px;
-        }
-        .campaign-row {
-            padding: 15px;
-            border-bottom: 1px solid #eee;
-            transition: background 0.2s;
-        }
-        .campaign-row:hover {
-            background: #f8f9fa;
-        }
-        .campaign-row:last-child {
-            border-bottom: none;
-        }
-        .progress-thin {
-            height: 6px;
-            border-radius: 3px;
-        }
-        .badge-tier {
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-size: 0.75rem;
-        }
-        .btn-track {
-            background: var(--primary);
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 8px;
-            font-size: 0.85rem;
-        }
-        .btn-track:hover {
-            background: var(--primary-dark);
-            color: white;
-        }
+        .stat-card h3 { font-size: 2rem; font-weight: 700; margin: 15px 0 5px; }
+        .stat-card p { color: #6c757d; margin: 0; }
+        .chart-card { background: white; border-radius: 16px; padding: 25px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); margin-bottom: 20px; }
+        .chart-card h5 { font-weight: 600; margin-bottom: 20px; }
+        .campaign-item { padding: 15px; border-bottom: 1px solid #eee; transition: background 0.2s; cursor: pointer; }
+        .campaign-item:hover { background: #f8f9fa; }
+        .campaign-item:last-child { border-bottom: none; }
+        .progress-thin { height: 6px; border-radius: 3px; }
+        .trend-up { color: #02a95c; }
+        .trend-down { color: #dc3545; }
     </style>
 </head>
 <body>
     <nav class="navbar navbar-dark mb-4">
         <div class="container">
-            <a class="navbar-brand" href="/">
-                <i class="fas fa-hand-holding-heart"></i> GoFundMe Scraper
-            </a>
+            <a class="navbar-brand" href="/"><i class="fas fa-hand-holding-heart"></i> GoFundMe Scraper</a>
             <div>
-                <a href="/" class="btn btn-outline-light btn-sm me-2">
-                    <i class="fas fa-search"></i> Scraper
-                </a>
-                <a href="/dashboard" class="btn btn-light btn-sm">
-                    <i class="fas fa-chart-line"></i> Dashboard
-                </a>
+                <a href="/" class="btn btn-outline-light btn-sm me-2"><i class="fas fa-search"></i> Scraper</a>
+                <a href="/dashboard" class="btn btn-light btn-sm me-2"><i class="fas fa-chart-line"></i> Dashboard</a>
+                <a href="/scheduler" class="btn btn-outline-light btn-sm"><i class="fas fa-clock"></i> Scheduler</a>
             </div>
         </div>
     </nav>
@@ -149,11 +76,18 @@
         </div>
 
         <div class="row">
-            <!-- Campaign Progress Chart -->
+            <!-- Funding Trends Chart -->
             <div class="col-md-8 mb-4">
                 <div class="chart-card">
-                    <h5><i class="fas fa-chart-area text-primary"></i> Funding Progress Over Time</h5>
-                    <canvas id="progressChart" height="300"></canvas>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="mb-0"><i class="fas fa-chart-area text-primary"></i> Funding Trends</h5>
+                        <select class="form-select form-select-sm w-auto" id="trendDays" onchange="loadTrends()">
+                            <option value="7">Last 7 days</option>
+                            <option value="30" selected>Last 30 days</option>
+                            <option value="90">Last 90 days</option>
+                        </select>
+                    </div>
+                    <canvas id="trendChart" height="250"></canvas>
                 </div>
             </div>
 
@@ -161,30 +95,47 @@
             <div class="col-md-4 mb-4">
                 <div class="chart-card">
                     <h5><i class="fas fa-trophy text-warning"></i> Top Campaigns</h5>
-                    <div id="topCampaigns">
-                        <div class="text-center text-muted py-4">
-                            <i class="fas fa-spinner fa-spin"></i> Loading...
-                        </div>
+                    <div id="topCampaigns" style="max-height: 350px; overflow-y: auto;">
+                        <div class="text-center text-muted py-4"><i class="fas fa-spinner fa-spin"></i> Loading...</div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Campaign List -->
+        <div class="row">
+            <!-- Growth Chart -->
+            <div class="col-md-6 mb-4">
+                <div class="chart-card">
+                    <h5><i class="fas fa-chart-bar text-success"></i> Daily Activity</h5>
+                    <canvas id="growthChart" height="200"></canvas>
+                </div>
+            </div>
+
+            <!-- Category Distribution -->
+            <div class="col-md-6 mb-4">
+                <div class="chart-card">
+                    <h5><i class="fas fa-pie-chart text-info"></i> Categories</h5>
+                    <canvas id="categoryChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- All Campaigns -->
         <div class="row">
             <div class="col-12">
                 <div class="chart-card">
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <h5 class="mb-0"><i class="fas fa-list text-primary"></i> All Tracked Campaigns</h5>
-                        <button class="btn btn-track" onclick="refreshAll()">
-                            <i class="fas fa-sync-alt"></i> Refresh All
-                        </button>
-                    </div>
-                    <div id="campaignList">
-                        <div class="text-center text-muted py-4">
-                            <i class="fas fa-spinner fa-spin"></i> Loading campaigns...
+                        <div>
+                            <button class="btn btn-outline-success btn-sm me-2" onclick="window.location.href='/export/database'">
+                                <i class="fas fa-download"></i> Export All
+                            </button>
+                            <button class="btn btn-primary btn-sm" onclick="refreshAll()">
+                                <i class="fas fa-sync-alt"></i> Refresh All
+                            </button>
                         </div>
                     </div>
+                    <div id="campaignList"></div>
                     <div id="pagination" class="d-flex justify-content-center mt-3"></div>
                 </div>
             </div>
@@ -193,58 +144,165 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        let progressChart = null;
-        let currentPage = 1;
+        let trendChart, growthChart, categoryChart;
 
-        // Load stats
         async function loadStats() {
             try {
                 const res = await fetch('/api/stats');
                 const data = await res.json();
-                
                 document.getElementById('totalCampaigns').textContent = data.total_campaigns.toLocaleString();
                 document.getElementById('totalSnapshots').textContent = data.total_snapshots.toLocaleString();
                 document.getElementById('totalDonations').textContent = data.total_donations.toLocaleString();
                 document.getElementById('totalRaised').textContent = '$' + (data.total_raised || 0).toLocaleString(undefined, {maximumFractionDigits: 0});
-            } catch (e) {
-                console.error('Error loading stats:', e);
-            }
+            } catch (e) { console.error('Error:', e); }
         }
 
-        // Load campaigns
-        async function loadCampaigns(page = 1) {
+        async function loadTrends() {
             try {
-                const res = await fetch(`/api/campaigns?page=${page}&per_page=10`);
+                const days = document.getElementById('trendDays').value;
+                const res = await fetch('/api/trends/funding?days=' + days);
                 const data = await res.json();
                 
+                const labels = data.trends.map(t => t.date);
+                const values = data.trends.map(t => t.total_raised);
+                
+                if (trendChart) trendChart.destroy();
+                
+                trendChart = new Chart(document.getElementById('trendChart'), {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Total Raised',
+                            data: values,
+                            borderColor: '#02a95c',
+                            backgroundColor: 'rgba(2, 169, 92, 0.1)',
+                            fill: true,
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: { legend: { display: false } },
+                        scales: { y: { ticks: { callback: v => '$' + v.toLocaleString() } } }
+                    }
+                });
+            } catch (e) { console.error('Error:', e); }
+        }
+
+        async function loadTopCampaigns() {
+            try {
+                const res = await fetch('/api/trends/top-campaigns?limit=10');
+                const data = await res.json();
+                
+                const container = document.getElementById('topCampaigns');
+                if (data.campaigns.length === 0) {
+                    container.innerHTML = '<div class="text-center text-muted py-3">No campaigns yet</div>';
+                    return;
+                }
+                
+                container.innerHTML = data.campaigns.map((c, i) => {
+                    const colors = ['#ffc107', '#6c757d', '#cd7f32', '#667eea', '#02a95c'];
+                    return `
+                        <div class="campaign-item" onclick="window.open('${c.url}', '_blank')">
+                            <div class="d-flex align-items-center">
+                                <span class="badge me-2" style="background: ${colors[i] || '#6c757d'}">#${i+1}</span>
+                                <div class="flex-grow-1">
+                                    <small class="d-block text-truncate fw-bold" style="max-width: 200px;">${c.title}</small>
+                                    <small class="text-success">$${(c.raised || 0).toLocaleString()}</small>
+                                    <small class="text-muted"> / $${(c.goal || 0).toLocaleString()}</small>
+                                </div>
+                            </div>
+                            <div class="progress progress-thin mt-2">
+                                <div class="progress-bar bg-success" style="width: ${Math.min(c.progress, 100)}%"></div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } catch (e) { console.error('Error:', e); }
+        }
+
+        async function loadGrowthChart() {
+            try {
+                const res = await fetch('/api/trends/growth');
+                const data = await res.json();
+                
+                if (growthChart) growthChart.destroy();
+                
+                growthChart = new Chart(document.getElementById('growthChart'), {
+                    type: 'bar',
+                    data: {
+                        labels: data.data.map(d => d.date),
+                        datasets: [{
+                            label: 'Campaigns Scraped',
+                            data: data.data.map(d => d.campaigns),
+                            backgroundColor: '#667eea'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: { legend: { display: false } }
+                    }
+                });
+            } catch (e) { console.error('Error:', e); }
+        }
+
+        async function loadCategoryChart() {
+            try {
+                const res = await fetch('/api/trends/categories');
+                const data = await res.json();
+                
+                if (categoryChart) categoryChart.destroy();
+                
+                const colors = ['#02a95c', '#667eea', '#ff9800', '#e91e63', '#00bcd4', '#9c27b0'];
+                
+                categoryChart = new Chart(document.getElementById('categoryChart'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: data.categories.map(c => c.name),
+                        datasets: [{
+                            data: data.categories.map(c => c.count),
+                            backgroundColor: colors
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: { legend: { position: 'right' } }
+                    }
+                });
+            } catch (e) { console.error('Error:', e); }
+        }
+
+        async function loadCampaigns(page = 1) {
+            try {
+                const res = await fetch('/api/campaigns?page=' + page + '&per_page=10');
+                const data = await res.json();
                 const list = document.getElementById('campaignList');
                 
                 if (data.campaigns.length === 0) {
-                    list.innerHTML = '<div class="text-center text-muted py-4">No campaigns tracked yet. Go to the <a href="/">Scraper</a> to add some!</div>';
+                    list.innerHTML = '<div class="text-center text-muted py-4">No campaigns yet. <a href="/">Start scraping!</a></div>';
                     return;
                 }
                 
                 list.innerHTML = data.campaigns.map(c => {
-                    const snapshot = c.latest_snapshot || {};
-                    const raised = snapshot.amount_raised || 0;
-                    const goal = c.goal_amount || 1;
-                    const progress = Math.min((raised / goal) * 100, 100);
-                    
+                    const s = c.latest_snapshot || {};
+                    const progress = c.goal_amount ? Math.min((s.amount_raised || 0) / c.goal_amount * 100, 100) : 0;
                     return `
-                        <div class="campaign-row">
-                            <div class="d-flex justify-content-between align-items-start">
+                        <div class="campaign-item">
+                            <div class="d-flex justify-content-between">
                                 <div class="flex-grow-1">
-                                    <h6 class="mb-1">${c.title || 'Untitled'}</h6>
-                                    <div class="d-flex align-items-center gap-3 mb-2">
-                                        <span class="text-success fw-bold">$${raised.toLocaleString()}</span>
-                                        <span class="text-muted">of $${goal.toLocaleString()} goal</span>
+                                    <strong>${c.title || 'Untitled'}</strong>
+                                    <div class="small text-muted">${c.url}</div>
+                                    <div class="mt-1">
+                                        <span class="text-success fw-bold">$${(s.amount_raised || 0).toLocaleString()}</span>
+                                        <span class="text-muted">of $${(c.goal_amount || 0).toLocaleString()}</span>
                                     </div>
-                                    <div class="progress progress-thin">
+                                    <div class="progress progress-thin mt-2" style="max-width: 300px;">
                                         <div class="progress-bar bg-success" style="width: ${progress}%"></div>
                                     </div>
                                 </div>
-                                <div class="ms-3">
-                                    <button class="btn btn-track btn-sm" onclick="trackCampaign(${c.id})">
+                                <div>
+                                    <button class="btn btn-outline-primary btn-sm" onclick="trackCampaign(${c.id})">
                                         <i class="fas fa-sync-alt"></i>
                                     </button>
                                 </div>
@@ -252,125 +310,60 @@
                         </div>
                     `;
                 }).join('');
-
-                // Update top campaigns
-                updateTopCampaigns(data.campaigns);
                 
                 // Pagination
-                renderPagination(data.pages, page);
-                
-            } catch (e) {
-                console.error('Error loading campaigns:', e);
-            }
-        }
-
-        function updateTopCampaigns(campaigns) {
-            const sorted = [...campaigns].sort((a, b) => {
-                const aRaised = a.latest_snapshot?.amount_raised || 0;
-                const bRaised = b.latest_snapshot?.amount_raised || 0;
-                return bRaised - aRaised;
-            }).slice(0, 5);
-
-            const container = document.getElementById('topCampaigns');
-            container.innerHTML = sorted.map((c, i) => {
-                const raised = c.latest_snapshot?.amount_raised || 0;
-                const colors = ['warning', 'secondary', 'danger', 'info', 'primary'];
-                return `
-                    <div class="d-flex align-items-center mb-3">
-                        <span class="badge bg-${colors[i]} me-2">#${i+1}</span>
-                        <div class="flex-grow-1">
-                            <small class="d-block text-truncate" style="max-width: 200px;">${c.title || 'Untitled'}</small>
-                            <strong class="text-success">$${raised.toLocaleString()}</strong>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        function renderPagination(totalPages, currentPage) {
-            if (totalPages <= 1) {
-                document.getElementById('pagination').innerHTML = '';
-                return;
-            }
-            
-            let html = '<nav><ul class="pagination pagination-sm">';
-            for (let i = 1; i <= totalPages; i++) {
-                html += `<li class="page-item ${i === currentPage ? 'active' : ''}">
-                    <a class="page-link" href="#" onclick="loadCampaigns(${i}); return false;">${i}</a>
-                </li>`;
-            }
-            html += '</ul></nav>';
-            document.getElementById('pagination').innerHTML = html;
+                let pag = '';
+                if (data.pages > 1) {
+                    pag = '<nav><ul class="pagination pagination-sm">';
+                    for (let i = 1; i <= data.pages; i++) {
+                        pag += `<li class="page-item ${i === page ? 'active' : ''}"><a class="page-link" href="#" onclick="loadCampaigns(${i}); return false;">${i}</a></li>`;
+                    }
+                    pag += '</ul></nav>';
+                }
+                document.getElementById('pagination').innerHTML = pag;
+            } catch (e) { console.error('Error:', e); }
         }
 
         async function trackCampaign(id) {
+            const btn = event.target.closest('button');
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            btn.disabled = true;
             try {
-                const btn = event.target.closest('button');
-                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-                btn.disabled = true;
-                
-                await fetch(`/api/campaigns/${id}/track`, { method: 'POST' });
-                
+                await fetch('/api/campaigns/' + id + '/track', { method: 'POST' });
                 loadStats();
-                loadCampaigns(currentPage);
-            } catch (e) {
-                console.error('Error tracking:', e);
-            }
+                loadCampaigns();
+                loadTrends();
+                loadTopCampaigns();
+            } catch (e) { alert('Error: ' + e.message); }
+            btn.innerHTML = '<i class="fas fa-sync-alt"></i>';
+            btn.disabled = false;
         }
 
         async function refreshAll() {
             const btn = event.target.closest('button');
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Refreshing...';
             btn.disabled = true;
-            
             try {
                 const res = await fetch('/api/campaigns?per_page=100');
                 const data = await res.json();
-                
                 for (const c of data.campaigns) {
-                    await fetch(`/api/campaigns/${c.id}/track`, { method: 'POST' });
+                    await fetch('/api/campaigns/' + c.id + '/track', { method: 'POST' });
                 }
-                
                 loadStats();
-                loadCampaigns(1);
-            } catch (e) {
-                console.error('Error:', e);
-            }
-            
+                loadCampaigns();
+                loadTrends();
+                loadTopCampaigns();
+            } catch (e) { console.error('Error:', e); }
             btn.innerHTML = '<i class="fas fa-sync-alt"></i> Refresh All';
             btn.disabled = false;
         }
 
-        // Initialize chart
-        function initChart() {
-            const ctx = document.getElementById('progressChart').getContext('2d');
-            progressChart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: [],
-                    datasets: []
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { position: 'bottom' }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: {
-                                callback: v => '$' + v.toLocaleString()
-                            }
-                        }
-                    }
-                }
-            });
-        }
-
         // Initialize
-        initChart();
         loadStats();
+        loadTrends();
+        loadTopCampaigns();
+        loadGrowthChart();
+        loadCategoryChart();
         loadCampaigns();
     </script>
 </body>
