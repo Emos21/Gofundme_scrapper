@@ -1,14 +1,19 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GoFundMe Scraper - Extract Campaign Data</title>
+    <title>FundScraper - Extract Campaign Data</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="/static/css/style.css" rel="stylesheet">
+    <script>
+        // Load saved theme
+        const savedTheme = localStorage.getItem('theme') || 'dark';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+    </script>
 </head>
 <body>
     <div class="bg-pattern"></div>
@@ -16,14 +21,34 @@
     <!-- Navigation -->
     <nav class="navbar">
         <div class="container flex items-center justify-between">
-            <a href="/" class="navbar-brand">
-                <i class="fas fa-rocket"></i>
-                <span>FundScraper</span>
+            <a href="/" class="logo">
+                <div class="logo-icon">
+                    <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <!-- Outer ring -->
+                        <circle cx="24" cy="24" r="20" stroke="#1e3a5f" stroke-width="3" fill="none"/>
+                        <!-- Scanner lines -->
+                        <circle cx="24" cy="24" r="14" stroke="#1e3a5f" stroke-width="2" fill="none" opacity="0.5"/>
+                        <circle cx="24" cy="24" r="8" stroke="#1e3a5f" stroke-width="2" fill="none" opacity="0.3"/>
+                        <!-- Radar sweep -->
+                        <path d="M24 4 L24 24 L40 12" fill="#f59e0b" opacity="0.3"/>
+                        <!-- Center heart -->
+                        <path d="M24 18 C21 15, 17 15, 17 19 C17 23, 24 28, 24 28 C24 28, 31 23, 31 19 C31 15, 27 15, 24 18Z" fill="#f59e0b"/>
+                        <!-- Pulse dot -->
+                        <circle cx="36" cy="12" r="3" fill="#10b981">
+                            <animate attributeName="opacity" values="1;0.3;1" dur="1.5s" repeatCount="indefinite"/>
+                        </circle>
+                    </svg>
+                </div>
+                <span class="logo-text">Fund<span>Scraper</span></span>
             </a>
             <div class="nav-links">
                 <a href="/" class="nav-link active"><i class="fas fa-search"></i> Scraper</a>
                 <a href="/dashboard" class="nav-link"><i class="fas fa-chart-line"></i> Dashboard</a>
                 <a href="/scheduler" class="nav-link"><i class="fas fa-clock"></i> Scheduler</a>
+                <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+                    <i class="fas fa-sun icon-sun"></i>
+                    <i class="fas fa-moon icon-moon"></i>
+                </button>
             </div>
         </div>
     </nav>
@@ -54,10 +79,10 @@
                             <i class="fas fa-link"></i> Enter URLs
                         </button>
                         <button class="tab" data-tab="discover" onclick="switchTab('discover')">
-                            <i class="fas fa-compass"></i> Auto Discover
+                            <i class="fas fa-compass"></i> Discover
                         </button>
                         <button class="tab" data-tab="upload" onclick="switchTab('upload')">
-                            <i class="fas fa-upload"></i> Bulk Import
+                            <i class="fas fa-upload"></i> Import
                         </button>
                     </div>
 
@@ -65,9 +90,7 @@
                     <div id="tab-manual" class="tab-content">
                         <div class="form-group">
                             <label class="form-label">GoFundMe Campaign URLs</label>
-                            <textarea class="form-control" id="urlInput" placeholder="Paste one URL per line...
-https://www.gofundme.com/f/campaign-name
-https://www.gofundme.com/f/another-campaign"></textarea>
+                            <textarea class="form-control" id="urlInput" placeholder="Paste one URL per line..."></textarea>
                         </div>
                         <button class="btn btn-primary btn-lg" style="width: 100%;" onclick="scrapeUrls()">
                             <i class="fas fa-bolt"></i> Scrape Campaigns
@@ -93,9 +116,9 @@ https://www.gofundme.com/f/another-campaign"></textarea>
                                 <span class="text-sm font-semibold">Discovered URLs</span>
                                 <span class="badge badge-accent" id="discoveredCount">0 found</span>
                             </div>
-                            <div id="urlChips" style="max-height: 200px; overflow-y: auto; padding: 0.5rem; background: var(--bg-dark); border-radius: var(--radius-md);"></div>
+                            <div id="urlChips" style="max-height: 200px; overflow-y: auto; padding: 0.5rem; background: var(--bg-tertiary); border-radius: var(--radius-md);"></div>
                             <button class="btn btn-success mt-4" style="width: 100%;" onclick="scrapeDiscovered()">
-                                <i class="fas fa-download"></i> Scrape All Discovered
+                                <i class="fas fa-download"></i> Scrape All
                             </button>
                         </div>
                     </div>
@@ -103,9 +126,9 @@ https://www.gofundme.com/f/another-campaign"></textarea>
                     <!-- Upload Tab -->
                     <div id="tab-upload" class="tab-content hidden">
                         <div class="form-group">
-                            <label class="form-label">Upload CSV or TXT file with URLs</label>
-                            <div style="border: 2px dashed var(--border-color); border-radius: var(--radius-md); padding: 2rem; text-align: center; cursor: pointer; transition: all var(--transition-fast);" onclick="document.getElementById('fileInput').click()" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border-color)'">
-                                <i class="fas fa-cloud-upload-alt text-accent" style="font-size: 2.5rem; margin-bottom: 0.75rem;"></i>
+                            <label class="form-label">Upload CSV or TXT file</label>
+                            <div style="border: 2px dashed var(--border-color); border-radius: var(--radius-md); padding: 2rem; text-align: center; cursor: pointer; transition: all var(--transition-fast);" onclick="document.getElementById('fileInput').click()" id="dropZone">
+                                <i class="fas fa-cloud-upload-alt text-accent" style="font-size: 2.5rem; margin-bottom: 0.75rem; display: block;"></i>
                                 <p class="text-secondary mb-1">Click to upload or drag and drop</p>
                                 <p class="text-muted text-sm">CSV or TXT files accepted</p>
                                 <input type="file" id="fileInput" accept=".csv,.txt" style="display: none;" onchange="handleFileUpload(event)">
@@ -143,33 +166,23 @@ https://www.gofundme.com/f/another-campaign"></textarea>
         <div id="resultsSection" class="mt-6 hidden">
             <div class="card">
                 <div class="card-header">
-                    <h5><i class="fas fa-list-check"></i> Scraping Results</h5>
+                    <h5><i class="fas fa-list-check"></i> Results</h5>
                     <div class="flex gap-2">
-                        <div class="dropdown" style="position: relative;">
-                            <button class="btn btn-secondary btn-sm" onclick="toggleDropdown()">
-                                <i class="fas fa-download"></i> Export
-                                <i class="fas fa-chevron-down" style="font-size: 0.7rem; margin-left: 0.25rem;"></i>
+                        <div style="position: relative;">
+                            <button class="btn btn-secondary btn-sm" onclick="this.nextElementSibling.classList.toggle('hidden')">
+                                <i class="fas fa-download"></i> Export <i class="fas fa-chevron-down" style="font-size: 0.7rem;"></i>
                             </button>
-                            <div id="exportDropdown" class="hidden" style="position: absolute; right: 0; top: 100%; margin-top: 0.5rem; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); min-width: 150px; z-index: 100; overflow: hidden;">
-                                <a href="#" onclick="exportData('csv'); return false;" class="flex items-center gap-2 p-3 text-sm" style="color: var(--text-secondary); text-decoration: none; transition: background 0.15s;" onmouseover="this.style.background='var(--bg-card-hover)'" onmouseout="this.style.background='transparent'">
-                                    <i class="fas fa-file-csv text-success"></i> CSV
-                                </a>
-                                <a href="#" onclick="exportData('excel'); return false;" class="flex items-center gap-2 p-3 text-sm" style="color: var(--text-secondary); text-decoration: none; transition: background 0.15s;" onmouseover="this.style.background='var(--bg-card-hover)'" onmouseout="this.style.background='transparent'">
-                                    <i class="fas fa-file-excel text-success"></i> Excel
-                                </a>
-                                <a href="#" onclick="exportData('json'); return false;" class="flex items-center gap-2 p-3 text-sm" style="color: var(--text-secondary); text-decoration: none; transition: background 0.15s;" onmouseover="this.style.background='var(--bg-card-hover)'" onmouseout="this.style.background='transparent'">
-                                    <i class="fas fa-file-code text-accent"></i> JSON
-                                </a>
-                                <a href="#" onclick="exportData('pdf'); return false;" class="flex items-center gap-2 p-3 text-sm" style="color: var(--text-secondary); text-decoration: none; transition: background 0.15s;" onmouseover="this.style.background='var(--bg-card-hover)'" onmouseout="this.style.background='transparent'">
-                                    <i class="fas fa-file-pdf" style="color: #ef4444;"></i> PDF
-                                </a>
+                            <div class="hidden" style="position: absolute; right: 0; top: 100%; margin-top: 0.5rem; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); min-width: 140px; z-index: 100; overflow: hidden;">
+                                <a href="#" onclick="exportData('csv'); return false;" class="flex items-center gap-2 p-3 text-sm" style="color: var(--text-secondary); text-decoration: none;"><i class="fas fa-file-csv text-success"></i> CSV</a>
+                                <a href="#" onclick="exportData('excel'); return false;" class="flex items-center gap-2 p-3 text-sm" style="color: var(--text-secondary); text-decoration: none;"><i class="fas fa-file-excel text-success"></i> Excel</a>
+                                <a href="#" onclick="exportData('json'); return false;" class="flex items-center gap-2 p-3 text-sm" style="color: var(--text-secondary); text-decoration: none;"><i class="fas fa-file-code text-accent"></i> JSON</a>
+                                <a href="#" onclick="exportData('pdf'); return false;" class="flex items-center gap-2 p-3 text-sm" style="color: var(--text-secondary); text-decoration: none;"><i class="fas fa-file-pdf" style="color: var(--error);"></i> PDF</a>
                             </div>
                         </div>
                     </div>
                 </div>
                 <div class="card-body p-0">
-                    <!-- Stats Bar -->
-                    <div class="flex gap-4 p-4" style="background: var(--bg-dark); border-bottom: 1px solid var(--border-color);">
+                    <div class="flex gap-4 p-4" style="background: var(--bg-tertiary); border-bottom: 1px solid var(--border-color);">
                         <div class="text-center" style="flex: 1;">
                             <div class="text-xl font-bold" id="totalCount">0</div>
                             <div class="text-xs text-muted">Total</div>
@@ -183,7 +196,6 @@ https://www.gofundme.com/f/another-campaign"></textarea>
                             <div class="text-xs text-muted">Failed</div>
                         </div>
                     </div>
-                    <!-- Results List -->
                     <div id="resultsList"></div>
                 </div>
             </div>
@@ -201,7 +213,16 @@ https://www.gofundme.com/f/another-campaign"></textarea>
         let discoveredUrls = [];
         let uploadedFile = null;
 
-        // Load initial stats
+        // Theme toggle
+        function toggleTheme() {
+            const html = document.documentElement;
+            const current = html.getAttribute('data-theme');
+            const next = current === 'dark' ? 'light' : 'dark';
+            html.setAttribute('data-theme', next);
+            localStorage.setItem('theme', next);
+        }
+
+        // Load stats
         async function loadStats() {
             try {
                 const [statsRes, tasksRes] = await Promise.all([
@@ -210,50 +231,29 @@ https://www.gofundme.com/f/another-campaign"></textarea>
                 ]);
                 const stats = await statsRes.json();
                 const tasks = await tasksRes.json();
-                
                 document.getElementById('dbCampaigns').textContent = stats.total_campaigns || 0;
                 document.getElementById('dbSnapshots').textContent = stats.total_snapshots || 0;
                 document.getElementById('scheduledTasks').textContent = tasks.tasks?.length || 0;
             } catch (e) { console.error(e); }
         }
 
-        // Tab switching
         function switchTab(tabName) {
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
-            document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
-            document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+            document.querySelector('[data-tab="' + tabName + '"]').classList.add('active');
+            document.getElementById('tab-' + tabName).classList.remove('hidden');
         }
 
-        // Toggle dropdown
-        function toggleDropdown() {
-            document.getElementById('exportDropdown').classList.toggle('hidden');
-        }
-
-        // Close dropdown on outside click
-        document.addEventListener('click', (e) => {
-            if (!e.target.closest('.dropdown')) {
-                document.getElementById('exportDropdown')?.classList.add('hidden');
-            }
-        });
-
-        // Show/hide loading
         function showLoading(show) {
             document.getElementById('loading').classList.toggle('active', show);
         }
 
-        // Scrape URLs
         async function scrapeUrls() {
             const urls = document.getElementById('urlInput').value.split('\n').filter(u => u.trim());
             if (!urls.length) { alert('Please enter at least one URL'); return; }
-            
             showLoading(true);
             try {
-                const res = await fetch('/scrape', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ urls })
-                });
+                const res = await fetch('/scrape', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ urls }) });
                 const data = await res.json();
                 scrapedResults = data.results;
                 displayResults(data.results);
@@ -262,17 +262,11 @@ https://www.gofundme.com/f/another-campaign"></textarea>
             showLoading(false);
         }
 
-        // Discover campaigns
         async function discoverCampaigns() {
             const maxUrls = document.getElementById('discoverCount').value;
             showLoading(true);
-            
             try {
-                const res = await fetch('/discover', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ max_urls: parseInt(maxUrls) })
-                });
+                const res = await fetch('/discover', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ max_urls: parseInt(maxUrls) }) });
                 const data = await res.json();
                 discoveredUrls = data.urls || [];
                 displayDiscoveredUrls(discoveredUrls);
@@ -280,40 +274,21 @@ https://www.gofundme.com/f/another-campaign"></textarea>
             showLoading(false);
         }
 
-        // Display discovered URLs
         function displayDiscoveredUrls(urls) {
-            const container = document.getElementById('discoveredUrls');
-            const chips = document.getElementById('urlChips');
             document.getElementById('discoveredCount').textContent = urls.length + ' found';
-            
-            chips.innerHTML = urls.map((url, i) => `
-                <div class="flex items-center justify-between py-2 px-3 mb-1" style="background: var(--bg-card); border-radius: var(--radius-sm);">
-                    <span class="text-sm truncate" style="max-width: 280px;">${url.split('/f/')[1] || url}</span>
-                    <button onclick="removeUrl(${i})" class="text-muted" style="background: none; border: none; cursor: pointer;">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-            `).join('');
-            
-            container.classList.remove('hidden');
+            document.getElementById('urlChips').innerHTML = urls.map((url, i) => 
+                '<div class="flex items-center justify-between py-2 px-3 mb-1" style="background: var(--bg-card); border-radius: var(--radius-sm);"><span class="text-sm truncate" style="max-width: 280px;">' + (url.split('/f/')[1] || url) + '</span><button onclick="removeUrl(' + i + ')" style="background: none; border: none; color: var(--text-muted); cursor: pointer;"><i class="fas fa-times"></i></button></div>'
+            ).join('');
+            document.getElementById('discoveredUrls').classList.remove('hidden');
         }
 
-        function removeUrl(i) {
-            discoveredUrls.splice(i, 1);
-            displayDiscoveredUrls(discoveredUrls);
-        }
+        function removeUrl(i) { discoveredUrls.splice(i, 1); displayDiscoveredUrls(discoveredUrls); }
 
-        // Scrape discovered URLs
         async function scrapeDiscovered() {
-            if (!discoveredUrls.length) { alert('No URLs to scrape'); return; }
+            if (!discoveredUrls.length) { alert('No URLs'); return; }
             showLoading(true);
-            
             try {
-                const res = await fetch('/scrape', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ urls: discoveredUrls })
-                });
+                const res = await fetch('/scrape', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ urls: discoveredUrls }) });
                 const data = await res.json();
                 scrapedResults = data.results;
                 displayResults(data.results);
@@ -322,7 +297,6 @@ https://www.gofundme.com/f/another-campaign"></textarea>
             showLoading(false);
         }
 
-        // Handle file upload
         function handleFileUpload(event) {
             const file = event.target.files[0];
             if (file) {
@@ -332,19 +306,13 @@ https://www.gofundme.com/f/another-campaign"></textarea>
             }
         }
 
-        // Import and scrape
         async function importAndScrape() {
-            if (!uploadedFile) { alert('Please select a file first'); return; }
+            if (!uploadedFile) return;
             showLoading(true);
-            
             try {
                 const formData = new FormData();
                 formData.append('file', uploadedFile);
-                
-                const res = await fetch('/api/import/scrape', {
-                    method: 'POST',
-                    body: formData
-                });
+                const res = await fetch('/api/import/scrape', { method: 'POST', body: formData });
                 const data = await res.json();
                 scrapedResults = data.results;
                 displayResults(data.results);
@@ -353,98 +321,49 @@ https://www.gofundme.com/f/another-campaign"></textarea>
             showLoading(false);
         }
 
-        // Display results
         function displayResults(results) {
             const section = document.getElementById('resultsSection');
             const list = document.getElementById('resultsList');
-            
             const successful = results.filter(r => !r.error);
-            const errors = results.filter(r => r.error);
-            
             document.getElementById('totalCount').textContent = results.length;
             document.getElementById('successCount').textContent = successful.length;
-            document.getElementById('errorCount').textContent = errors.length;
+            document.getElementById('errorCount').textContent = results.length - successful.length;
             
             list.innerHTML = results.map(r => {
-                if (r.error) {
-                    return `
-                        <div class="list-item" style="border-left: 3px solid var(--error);">
-                            <div class="flex items-center gap-2 mb-1">
-                                <i class="fas fa-exclamation-circle" style="color: var(--error);"></i>
-                                <span class="font-semibold">Failed to scrape</span>
-                            </div>
-                            <p class="text-sm text-muted truncate">${r.url}</p>
-                            <p class="text-sm" style="color: var(--error);">${r.error}</p>
-                        </div>
-                    `;
-                }
-                
-                const donations = r.donations?.slice(0, 3).map(d => 
-                    `<span class="badge badge-primary" style="margin-right: 0.25rem;">${d.name}: ${d.amount}</span>`
-                ).join('') || '';
-                
-                return `
-                    <div class="list-item" style="border-left: 3px solid var(--success);">
-                        <div class="flex justify-between items-start gap-4">
-                            <div style="flex: 1; min-width: 0;">
-                                <h6 class="font-semibold mb-1 truncate">${r.title}</h6>
-                                <div class="flex items-center gap-3 mb-2">
-                                    <span class="text-accent font-bold">${r.amount_raised}</span>
-                                    <span class="text-muted text-sm">of ${r.goal_amount} goal</span>
-                                </div>
-                                <p class="text-sm text-secondary mb-2" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">${r.statement}</p>
-                                <div class="mb-2">${donations}</div>
-                                <div class="flex items-center gap-2 text-xs text-muted">
-                                    <i class="fas fa-calendar"></i> ${r.date_scraped}
-                                </div>
-                            </div>
-                            <a href="${r.url}" target="_blank" class="btn btn-ghost btn-sm">
-                                <i class="fas fa-external-link-alt"></i>
-                            </a>
-                        </div>
-                    </div>
-                `;
+                if (r.error) return '<div class="list-item" style="border-left: 3px solid var(--error);"><div class="flex items-center gap-2 mb-1"><i class="fas fa-exclamation-circle" style="color: var(--error);"></i><span class="font-semibold">Failed</span></div><p class="text-sm text-muted truncate">' + r.url + '</p></div>';
+                return '<div class="list-item" style="border-left: 3px solid var(--success);"><div class="flex justify-between items-start gap-4"><div style="flex: 1; min-width: 0;"><h6 class="font-semibold mb-1 truncate">' + r.title + '</h6><div class="flex items-center gap-3 mb-2"><span class="text-accent font-bold">' + r.amount_raised + '</span><span class="text-muted text-sm">of ' + r.goal_amount + '</span></div></div><a href="' + r.url + '" target="_blank" class="btn btn-ghost btn-sm"><i class="fas fa-external-link-alt"></i></a></div></div>';
             }).join('');
-            
             section.classList.remove('hidden');
-            section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            section.scrollIntoView({ behavior: 'smooth' });
         }
 
-        // Export data
         async function exportData(format) {
-            if (!scrapedResults.length) { alert('No data to export'); return; }
-            
-            const endpoints = {
-                csv: '/export',
-                excel: '/export/excel',
-                json: '/export/json',
-                pdf: '/export/pdf'
-            };
-            
-            const extensions = { csv: 'csv', excel: 'xlsx', json: 'json', pdf: 'pdf' };
-            
+            if (!scrapedResults.length) { alert('No data'); return; }
+            const endpoints = { csv: '/export', excel: '/export/excel', json: '/export/json', pdf: '/export/pdf' };
+            const ext = { csv: 'csv', excel: 'xlsx', json: 'json', pdf: 'pdf' };
             try {
-                const res = await fetch(endpoints[format], {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ results: scrapedResults })
-                });
-                
+                const res = await fetch(endpoints[format], { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ results: scrapedResults }) });
                 if (res.ok) {
                     const blob = await res.blob();
-                    const url = URL.createObjectURL(blob);
                     const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `gofundme_data_${new Date().toISOString().split('T')[0]}.${extensions[format]}`;
+                    a.href = URL.createObjectURL(blob);
+                    a.download = 'gofundme_' + new Date().toISOString().split('T')[0] + '.' + ext[format];
                     a.click();
-                    URL.revokeObjectURL(url);
                 }
-            } catch (e) { alert('Export error: ' + e.message); }
-            
-            document.getElementById('exportDropdown').classList.add('hidden');
+            } catch (e) { alert('Error: ' + e.message); }
         }
 
-        // Initialize
+        // Drag and drop
+        const dropZone = document.getElementById('dropZone');
+        dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.style.borderColor = 'var(--accent)'; });
+        dropZone.addEventListener('dragleave', () => { dropZone.style.borderColor = 'var(--border-color)'; });
+        dropZone.addEventListener('drop', e => {
+            e.preventDefault();
+            dropZone.style.borderColor = 'var(--border-color)';
+            const file = e.dataTransfer.files[0];
+            if (file) { uploadedFile = file; document.getElementById('fileName').textContent = '📄 ' + file.name; document.getElementById('importBtn').disabled = false; }
+        });
+
         loadStats();
     </script>
 </body>

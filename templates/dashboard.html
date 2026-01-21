@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,6 +10,10 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="/static/css/style.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        const savedTheme = localStorage.getItem("theme") || "dark";
+        document.documentElement.setAttribute("data-theme", savedTheme);
+    </script>
 </head>
 <body>
     <div class="bg-pattern"></div>
@@ -17,14 +21,29 @@
     <!-- Navigation -->
     <nav class="navbar">
         <div class="container flex items-center justify-between">
-            <a href="/" class="navbar-brand">
-                <i class="fas fa-rocket"></i>
-                <span>FundScraper</span>
+            <a href="/" class="logo">
+                <div class="logo-icon">
+                    <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="24" cy="24" r="20" stroke="#1e3a5f" stroke-width="3" fill="none"/>
+                        <circle cx="24" cy="24" r="14" stroke="#1e3a5f" stroke-width="2" fill="none" opacity="0.5"/>
+                        <circle cx="24" cy="24" r="8" stroke="#1e3a5f" stroke-width="2" fill="none" opacity="0.3"/>
+                        <path d="M24 4 L24 24 L40 12" fill="#f59e0b" opacity="0.3"/>
+                        <path d="M24 18 C21 15, 17 15, 17 19 C17 23, 24 28, 24 28 C24 28, 31 23, 31 19 C31 15, 27 15, 24 18Z" fill="#f59e0b"/>
+                        <circle cx="36" cy="12" r="3" fill="#10b981">
+                            <animate attributeName="opacity" values="1;0.3;1" dur="1.5s" repeatCount="indefinite"/>
+                        </circle>
+                    </svg>
+                </div>
+                <span class="logo-text">Fund<span>Scraper</span></span>
             </a>
             <div class="nav-links">
                 <a href="/" class="nav-link"><i class="fas fa-search"></i> Scraper</a>
                 <a href="/dashboard" class="nav-link active"><i class="fas fa-chart-line"></i> Dashboard</a>
                 <a href="/scheduler" class="nav-link"><i class="fas fa-clock"></i> Scheduler</a>
+                <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+                    <i class="fas fa-sun icon-sun"></i>
+                    <i class="fas fa-moon icon-moon"></i>
+                </button>
             </div>
         </div>
     </nav>
@@ -143,6 +162,14 @@
     </main>
 
     <script>
+        function toggleTheme() {
+            const html = document.documentElement;
+            const current = html.getAttribute("data-theme");
+            const next = current === "dark" ? "light" : "dark";
+            html.setAttribute("data-theme", next);
+            localStorage.setItem("theme", next);
+        }
+
         let trendChart, activityChart, categoryChart;
         let currentPage = 1;
 
