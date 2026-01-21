@@ -80,26 +80,42 @@ def scrape_campaign(url):
 def discover_campaigns(max_urls=20):
     """Discover GoFundMe campaign URLs from the discover page."""
     discovered_urls = set()
-    seed_url = 'https://www.gofundme.com/discover'
+
+    # Try multiple discovery sources
+    discovery_urls = [
+        'https://www.gofundme.com/discover',
+        'https://www.gofundme.com/discover/trending',
+        'https://www.gofundme.com/c/crisis-relief',
+        'https://www.gofundme.com/c/medical'
+    ]
 
     try:
         headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.5'
         }
-        response = requests.get(seed_url, headers=headers, timeout=10)
-        response.raise_for_status()
 
-        soup = BeautifulSoup(response.text, 'html.parser')
-        links = soup.find_all('a', href=True)
+        for seed_url in discovery_urls:
+            if len(discovered_urls) >= max_urls:
+                break
 
-        for link in links:
-            url = link['href']
-            if re.match(r'^https://www.gofundme.com/f/.*$', url):
-                discovered_urls.add(url)
-                if len(discovered_urls) >= max_urls:
-                    break
+            response = requests.get(seed_url, headers=headers, timeout=15)
+
+            if response.status_code == 200:
+                # Use regex to find all GoFundMe campaign URLs
+                urls_found = re.findall(r'https://www\.gofundme\.com/f/[a-zA-Z0-9\-_]+', response.text)
+
+                for url in urls_found:
+                    # Clean URL (remove trailing backslashes or quotes)
+                    url = url.rstrip('\\').rstrip('"').rstrip("'")
+                    if url not in discovered_urls:
+                        discovered_urls.add(url)
+                        if len(discovered_urls) >= max_urls:
+                            break
+
     except Exception as e:
-        return {"error": str(e), "urls": []}
+        return {"error": str(e), "urls": list(discovered_urls)}
 
     return {"urls": list(discovered_urls), "count": len(discovered_urls)}
 
