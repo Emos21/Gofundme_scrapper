@@ -538,3 +538,104 @@ def export_database():
         as_attachment=True,
         download_name=f'gofundme_database_export_{date.today()}.json'
     )
+
+
+# ============== SCHEDULED TASKS ==============
+
+@app.route('/api/tasks', methods=['GET'])
+def get_tasks():
+    """Get all scheduled tasks."""
+    tasks = ScheduledTask.query.order_by(ScheduledTask.created_at.desc()).all()
+    
+    # Get scheduler info
+    from scheduler import get_scheduler_jobs
+    jobs = get_scheduler_jobs()
+    jobs_dict = {j['id']: j for j in jobs}
+    
+    result = []
+    for task in tasks:
+        task_data = task.to_dict()
+        job_info = jobs_dict.get(f'task_{task.id}')
+        if job_info:
+            task_data['next_run'] = job_info['next_run']
+        result.append(task_data)
+    
+    return jsonify({'tasks': result})
+
+
+@app.route('/api/tasks', methods=['POST'])
+def create_task():
+    """Create a new scheduled task."""
+    data = request.json
+    
+    task = ScheduledTask(
+        name=data.get('name', 'Unnamed Task'),
+        task_type=data.get('task_type', 'track_all'),
+        schedule=data.get('schedule', 'daily'),
+        urls=json.dumps(data.get('urls', [])) if data.get('urls') else None,
+        is_active=data.get('is_active', True)
+    )
+    
+    db.session.add(task)
+    db.session.commit()
+    
+    # Add to scheduler
+    from scheduler import add_scheduled_task
+    add_scheduled_task(task)
+    
+    return jsonify({'message': 'Task created', 'task': task.to_dict()}), 201
+
+
+@app.route('/api/tasks/<int:task_id>', methods=['PUT'])
+def update_task(task_id):
+    """Update a scheduled task."""
+    task = ScheduledTask.query.get_or_404(task_id)
+    data = request.json
+    
+    task.name = data.get('name', task.name)
+    task.task_type = data.get('task_type', task.task_type)
+    task.schedule = data.get('schedule', task.schedule)
+    task.urls = json.dumps(data.get('urls', [])) if data.get('urls') else task.urls
+    task.is_active = data.get('is_active', task.is_active)
+    
+    db.session.commit()
+    
+    # Update scheduler
+    from scheduler import add_scheduled_task, remove_scheduled_task
+    if task.is_active:
+        add_scheduled_task(task)
+    else:
+        remove_scheduled_task(task.id)
+    
+    return jsonify({'message': 'Task updated', 'task': task.to_dict()})
+
+
+@app.route('/api/tasks/<int:task_id>', methods=['DELETE'])
+def delete_task(task_id):
+    """Delete a scheduled task."""
+    task = ScheduledTask.query.get_or_404(task_id)
+    
+    from scheduler import remove_scheduled_task
+    remove_scheduled_task(task.id)
+    
+    db.session.delete(task)
+    db.session.commit()
+    
+    return jsonify({'message': 'Task deleted'})
+
+
+@app.route('/api/tasks/<int:task_id>/run', methods=['POST'])
+def run_task_now(task_id):
+    """Run a scheduled task immediately."""
+    task = ScheduledTask.query.get_or_404(task_id)
+    
+    from scheduler import run_scheduled_scrape
+    run_scheduled_scrape(task.id)
+    
+    return jsonify({'message': 'Task executed'})
+
+
+@app.route('/scheduler')
+def scheduler_page():
+    """Scheduler management page."""
+    return render_template('scheduler.html')
