@@ -1,0 +1,3 @@
+# Mark templates and static files as vendored (excluded from language stats)
+templates/* linguist-vendored
+static/* linguist-vendored
