@@ -3,169 +3,231 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Scheduler - GoFundMe Scraper</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>Scheduler - FundScraper</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <style>
-        :root { --primary: #02a95c; }
-        body { background: #f0f2f5; font-family: 'Segoe UI', sans-serif; }
-        .navbar { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
-        .card { border: none; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
-        .task-card { padding: 20px; border-bottom: 1px solid #eee; }
-        .task-card:last-child { border-bottom: none; }
-        .badge-active { background: #02a95c; }
-        .badge-inactive { background: #6c757d; }
-        .btn-primary { background: var(--primary); border: none; }
-        .btn-primary:hover { background: #028a4a; }
-    </style>
+    <link href="/static/css/style.css" rel="stylesheet">
 </head>
 <body>
-    <nav class="navbar navbar-dark mb-4">
-        <div class="container">
-            <a class="navbar-brand" href="/"><i class="fas fa-hand-holding-heart"></i> GoFundMe Scraper</a>
-            <div>
-                <a href="/" class="btn btn-outline-light btn-sm me-2"><i class="fas fa-search"></i> Scraper</a>
-                <a href="/dashboard" class="btn btn-outline-light btn-sm me-2"><i class="fas fa-chart-line"></i> Dashboard</a>
-                <a href="/scheduler" class="btn btn-light btn-sm"><i class="fas fa-clock"></i> Scheduler</a>
+    <div class="bg-pattern"></div>
+    
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container flex items-center justify-between">
+            <a href="/" class="navbar-brand">
+                <i class="fas fa-rocket"></i>
+                <span>FundScraper</span>
+            </a>
+            <div class="nav-links">
+                <a href="/" class="nav-link"><i class="fas fa-search"></i> Scraper</a>
+                <a href="/dashboard" class="nav-link"><i class="fas fa-chart-line"></i> Dashboard</a>
+                <a href="/scheduler" class="nav-link active"><i class="fas fa-clock"></i> Scheduler</a>
             </div>
         </div>
     </nav>
 
-    <div class="container">
-        <div class="row">
-            <div class="col-md-8">
-                <div class="card mb-4">
-                    <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0"><i class="fas fa-tasks text-primary"></i> Scheduled Tasks</h5>
-                        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#taskModal">
-                            <i class="fas fa-plus"></i> New Task
-                        </button>
-                    </div>
-                    <div class="card-body p-0" id="taskList">
-                        <div class="text-center text-muted py-4"><i class="fas fa-spinner fa-spin"></i> Loading...</div>
+    <!-- Main Content -->
+    <main class="container" style="padding: 2rem 1.5rem 4rem;">
+        
+        <!-- Page Header -->
+        <div class="flex items-center justify-between mb-6 animate-fadeInUp">
+            <div>
+                <h1 class="text-2xl mb-1">Task <span class="text-gradient">Scheduler</span></h1>
+                <p class="text-secondary">Automate your scraping with scheduled tasks</p>
+            </div>
+            <button class="btn btn-primary" onclick="openModal()">
+                <i class="fas fa-plus"></i> New Task
+            </button>
+        </div>
+
+        <div class="grid" style="grid-template-columns: 2fr 1fr; gap: 1.5rem;">
+            
+            <!-- Tasks List -->
+            <div class="card animate-fadeInUp" style="animation-delay: 0.1s;">
+                <div class="card-header">
+                    <h5><i class="fas fa-tasks"></i> Scheduled Tasks</h5>
+                    <span class="badge badge-accent" id="taskCount">0 tasks</span>
+                </div>
+                <div class="card-body p-0" id="taskList">
+                    <div class="text-center py-6 text-muted">
+                        <i class="fas fa-spinner fa-spin"></i> Loading tasks...
                     </div>
                 </div>
             </div>
-            
-            <div class="col-md-4">
+
+            <!-- Help Panel -->
+            <div class="flex flex-col gap-4 animate-fadeInUp" style="animation-delay: 0.2s;">
+                
+                <!-- Quick Stats -->
+                <div class="stat-card">
+                    <div class="stat-icon accent"><i class="fas fa-play-circle"></i></div>
+                    <div class="stat-value" id="activeTasks">0</div>
+                    <div class="stat-label">Active Tasks</div>
+                </div>
+
+                <!-- Guide Card -->
                 <div class="card">
-                    <div class="card-header bg-white">
-                        <h5 class="mb-0"><i class="fas fa-info-circle text-info"></i> Quick Guide</h5>
+                    <div class="card-header">
+                        <h5><i class="fas fa-book"></i> Quick Guide</h5>
                     </div>
                     <div class="card-body">
-                        <h6>Task Types:</h6>
-                        <ul class="small">
-                            <li><strong>Track All</strong> - Re-scrape all tracked campaigns</li>
-                            <li><strong>Scrape URLs</strong> - Scrape specific URLs</li>
-                            <li><strong>Discover & Scrape</strong> - Find new campaigns and scrape them</li>
-                        </ul>
-                        <h6>Schedule Options:</h6>
-                        <ul class="small">
-                            <li><code>hourly</code> - Every hour</li>
-                            <li><code>daily</code> - Every day at midnight</li>
-                            <li><code>weekly</code> - Every Monday</li>
-                            <li><code>every_30_minutes</code> - Every 30 min</li>
-                            <li><code>every_6_hours</code> - Every 6 hours</li>
-                            <li><code>0 9 * * *</code> - Cron (9 AM daily)</li>
-                        </ul>
+                        <div class="mb-4">
+                            <h6 class="font-semibold mb-2 text-sm">Task Types</h6>
+                            <div class="flex flex-col gap-2">
+                                <div class="flex items-center gap-2 text-sm">
+                                    <i class="fas fa-sync text-accent" style="width: 16px;"></i>
+                                    <span class="text-secondary"><strong>Track All</strong> - Update all campaigns</span>
+                                </div>
+                                <div class="flex items-center gap-2 text-sm">
+                                    <i class="fas fa-compass text-accent" style="width: 16px;"></i>
+                                    <span class="text-secondary"><strong>Discover</strong> - Find new campaigns</span>
+                                </div>
+                                <div class="flex items-center gap-2 text-sm">
+                                    <i class="fas fa-link text-accent" style="width: 16px;"></i>
+                                    <span class="text-secondary"><strong>Scrape URLs</strong> - Specific URLs</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <h6 class="font-semibold mb-2 text-sm">Schedule Options</h6>
+                            <div class="flex flex-wrap gap-1">
+                                <span class="badge badge-primary">hourly</span>
+                                <span class="badge badge-primary">daily</span>
+                                <span class="badge badge-primary">weekly</span>
+                                <span class="badge badge-primary">every_30_minutes</span>
+                                <span class="badge badge-primary">every_6_hours</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
+    </main>
 
-    <!-- Task Modal -->
-    <div class="modal fade" id="taskModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title"><i class="fas fa-clock"></i> Create Scheduled Task</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+    <!-- Modal -->
+    <div id="modal" class="hidden" style="position: fixed; inset: 0; z-index: 1000;">
+        <div style="position: absolute; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);" onclick="closeModal()"></div>
+        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 100%; max-width: 480px; padding: 1rem;">
+            <div class="card" style="animation: fadeInUp 0.3s ease-out;">
+                <div class="card-header">
+                    <h5><i class="fas fa-plus-circle"></i> Create Scheduled Task</h5>
+                    <button onclick="closeModal()" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.25rem;">
+                        <i class="fas fa-times"></i>
+                    </button>
                 </div>
-                <div class="modal-body">
-                    <div class="mb-3">
+                <div class="card-body">
+                    <div class="form-group">
                         <label class="form-label">Task Name</label>
-                        <input type="text" class="form-control" id="taskName" placeholder="Daily Campaign Update">
+                        <input type="text" class="form-control" id="taskName" placeholder="e.g., Daily Campaign Update">
                     </div>
-                    <div class="mb-3">
+                    <div class="form-group">
                         <label class="form-label">Task Type</label>
-                        <select class="form-select" id="taskType">
+                        <select class="form-control form-select" id="taskType" onchange="toggleUrlsField()">
                             <option value="track_all">Track All Campaigns</option>
                             <option value="discover_and_scrape">Discover & Scrape New</option>
                             <option value="scrape">Scrape Specific URLs</option>
                         </select>
                     </div>
-                    <div class="mb-3">
+                    <div class="form-group">
                         <label class="form-label">Schedule</label>
-                        <select class="form-select" id="taskSchedule">
+                        <select class="form-control form-select" id="taskSchedule">
+                            <option value="every_30_minutes">Every 30 Minutes</option>
                             <option value="hourly">Hourly</option>
                             <option value="every_6_hours">Every 6 Hours</option>
                             <option value="daily" selected>Daily</option>
                             <option value="weekly">Weekly</option>
-                            <option value="every_30_minutes">Every 30 Minutes</option>
                         </select>
                     </div>
-                    <div class="mb-3" id="urlsGroup" style="display: none;">
+                    <div class="form-group hidden" id="urlsGroup">
                         <label class="form-label">URLs (one per line)</label>
-                        <textarea class="form-control" id="taskUrls" rows="4"></textarea>
+                        <textarea class="form-control" id="taskUrls" rows="4" placeholder="https://www.gofundme.com/f/campaign-1"></textarea>
                     </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary" onclick="createTask()">Create Task</button>
+                    <div class="flex gap-2 mt-4">
+                        <button class="btn btn-ghost" style="flex: 1;" onclick="closeModal()">Cancel</button>
+                        <button class="btn btn-primary" style="flex: 1;" onclick="createTask()">
+                            <i class="fas fa-check"></i> Create Task
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Show/hide URLs input based on task type
-        document.getElementById('taskType').addEventListener('change', function() {
-            document.getElementById('urlsGroup').style.display = this.value === 'scrape' ? 'block' : 'none';
-        });
+        function openModal() {
+            document.getElementById('modal').classList.remove('hidden');
+            document.getElementById('taskName').value = '';
+            document.getElementById('taskType').value = 'track_all';
+            document.getElementById('taskSchedule').value = 'daily';
+            document.getElementById('taskUrls').value = '';
+            toggleUrlsField();
+        }
+
+        function closeModal() {
+            document.getElementById('modal').classList.add('hidden');
+        }
+
+        function toggleUrlsField() {
+            const type = document.getElementById('taskType').value;
+            document.getElementById('urlsGroup').classList.toggle('hidden', type !== 'scrape');
+        }
 
         async function loadTasks() {
             try {
                 const res = await fetch('/api/tasks');
                 const data = await res.json();
                 const list = document.getElementById('taskList');
+                const tasks = data.tasks || [];
                 
-                if (data.tasks.length === 0) {
-                    list.innerHTML = '<div class="text-center text-muted py-4">No scheduled tasks yet</div>';
+                document.getElementById('taskCount').textContent = tasks.length + ' tasks';
+                document.getElementById('activeTasks').textContent = tasks.filter(t => t.is_active).length;
+                
+                if (!tasks.length) {
+                    list.innerHTML = '<div class="text-center py-6 text-muted"><i class="fas fa-calendar-times" style="font-size: 2rem; margin-bottom: 0.5rem;"></i><p>No scheduled tasks yet</p></div>';
                     return;
                 }
                 
-                list.innerHTML = data.tasks.map(t => `
-                    <div class="task-card">
-                        <div class="d-flex justify-content-between align-items-start">
-                            <div>
-                                <h6 class="mb-1">${t.name}</h6>
-                                <small class="text-muted">
-                                    <i class="fas fa-cog"></i> ${t.task_type} | 
-                                    <i class="fas fa-clock"></i> ${t.schedule}
-                                </small>
-                                ${t.next_run ? '<br><small class="text-success"><i class="fas fa-forward"></i> Next: ' + new Date(t.next_run).toLocaleString() + '</small>' : ''}
-                                ${t.last_run ? '<br><small class="text-muted"><i class="fas fa-history"></i> Last: ' + new Date(t.last_run).toLocaleString() + '</small>' : ''}
+                const typeIcons = {
+                    track_all: 'fa-sync',
+                    discover_and_scrape: 'fa-compass',
+                    scrape: 'fa-link'
+                };
+                
+                list.innerHTML = tasks.map(t => `
+                    <div class="list-item">
+                        <div class="flex items-start gap-3">
+                            <div class="stat-icon ${t.is_active ? 'accent' : 'primary'}" style="width: 44px; height: 44px; font-size: 1rem; flex-shrink: 0;">
+                                <i class="fas ${typeIcons[t.task_type] || 'fa-cog'}"></i>
                             </div>
-                            <div class="btn-group">
-                                <span class="badge ${t.is_active ? 'badge-active' : 'badge-inactive'} me-2">${t.is_active ? 'Active' : 'Paused'}</span>
-                                <button class="btn btn-outline-primary btn-sm" onclick="runTask(${t.id})" title="Run Now">
+                            <div style="flex: 1; min-width: 0;">
+                                <div class="flex items-center gap-2 mb-1">
+                                    <h6 class="font-semibold truncate">${t.name}</h6>
+                                    <span class="badge ${t.is_active ? 'badge-success' : 'badge-primary'}">${t.is_active ? 'Active' : 'Paused'}</span>
+                                </div>
+                                <div class="flex items-center gap-3 text-sm text-muted mb-1">
+                                    <span><i class="fas fa-clock"></i> ${t.schedule}</span>
+                                    <span><i class="fas fa-cog"></i> ${t.task_type.replace(/_/g, ' ')}</span>
+                                </div>
+                                ${t.next_run ? '<div class="text-xs text-success"><i class="fas fa-forward"></i> Next: ' + new Date(t.next_run).toLocaleString() + '</div>' : ''}
+                                ${t.last_run ? '<div class="text-xs text-muted"><i class="fas fa-history"></i> Last: ' + new Date(t.last_run).toLocaleString() + '</div>' : ''}
+                            </div>
+                            <div class="flex gap-1">
+                                <button class="btn btn-ghost btn-sm btn-icon" onclick="runTask(${t.id}, this)" title="Run Now">
                                     <i class="fas fa-play"></i>
                                 </button>
-                                <button class="btn btn-outline-${t.is_active ? 'warning' : 'success'} btn-sm" onclick="toggleTask(${t.id}, ${!t.is_active})" title="${t.is_active ? 'Pause' : 'Resume'}">
+                                <button class="btn btn-ghost btn-sm btn-icon" onclick="toggleTask(${t.id}, ${!t.is_active})" title="${t.is_active ? 'Pause' : 'Resume'}">
                                     <i class="fas fa-${t.is_active ? 'pause' : 'play'}"></i>
                                 </button>
-                                <button class="btn btn-outline-danger btn-sm" onclick="deleteTask(${t.id})" title="Delete">
+                                <button class="btn btn-ghost btn-sm btn-icon" onclick="deleteTask(${t.id})" title="Delete" style="color: var(--error);">
                                     <i class="fas fa-trash"></i>
                                 </button>
                             </div>
                         </div>
                     </div>
                 `).join('');
-            } catch (e) {
-                console.error('Error loading tasks:', e);
-            }
+            } catch (e) { console.error(e); }
         }
 
         async function createTask() {
@@ -174,52 +236,58 @@
             const schedule = document.getElementById('taskSchedule').value;
             const urls = document.getElementById('taskUrls').value.split('\n').filter(u => u.trim());
 
+            if (!name) { alert('Please enter a task name'); return; }
+
             try {
-                await fetch('/api/tasks', {
+                const res = await fetch('/api/tasks', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ name, task_type: taskType, schedule, urls })
                 });
-                bootstrap.Modal.getInstance(document.getElementById('taskModal')).hide();
-                loadTasks();
-            } catch (e) {
-                alert('Error creating task: ' + e.message);
-            }
+                
+                if (res.ok) {
+                    closeModal();
+                    loadTasks();
+                } else {
+                    alert('Failed to create task');
+                }
+            } catch (e) { alert('Error: ' + e.message); }
         }
 
-        async function runTask(id) {
+        async function runTask(id, btn) {
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            btn.disabled = true;
+            
             try {
-                await fetch(`/api/tasks/${id}/run`, { method: 'POST' });
-                alert('Task executed!');
+                await fetch('/api/tasks/' + id + '/run', { method: 'POST' });
                 loadTasks();
-            } catch (e) {
-                alert('Error: ' + e.message);
-            }
+            } catch (e) { alert('Error: ' + e.message); }
+            
+            btn.innerHTML = '<i class="fas fa-play"></i>';
+            btn.disabled = false;
         }
 
         async function toggleTask(id, isActive) {
             try {
-                await fetch(`/api/tasks/${id}`, {
+                await fetch('/api/tasks/' + id, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ is_active: isActive })
                 });
                 loadTasks();
-            } catch (e) {
-                alert('Error: ' + e.message);
-            }
+            } catch (e) { alert('Error: ' + e.message); }
         }
 
         async function deleteTask(id) {
             if (!confirm('Delete this task?')) return;
+            
             try {
-                await fetch(`/api/tasks/${id}`, { method: 'DELETE' });
+                await fetch('/api/tasks/' + id, { method: 'DELETE' });
                 loadTasks();
-            } catch (e) {
-                alert('Error: ' + e.message);
-            }
+            } catch (e) { alert('Error: ' + e.message); }
         }
 
+        // Initialize
         loadTasks();
     </script>
 </body>
